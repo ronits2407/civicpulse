@@ -39,18 +39,18 @@ export async function createIssuePipeline() {
   workflow.addNode('resolve', runResolutionAgent)
   workflow.addNode('save', saveToDatabase)
 
-  workflow.setEntryPoint('classify')
-  workflow.addEdge('classify', 'deduplicate')
-  workflow.addConditionalEdges('deduplicate', shouldContinueAfterDedup, {
+  workflow.setEntryPoint('classify' as any)
+  workflow.addEdge('classify' as any, 'deduplicate' as any)
+  workflow.addConditionalEdges('deduplicate' as any, shouldContinueAfterDedup, {
     validate: 'validate',
     end: 'save',
-  })
-  workflow.addConditionalEdges('validate', shouldContinueAfterValidation, {
+  } as any)
+  workflow.addConditionalEdges('validate' as any, shouldContinueAfterValidation, {
     resolve: 'resolve',
     end: 'save',
-  })
-  workflow.addEdge('resolve', 'save')
-  workflow.addEdge('save', END)
+  } as any)
+  workflow.addEdge('resolve' as any, 'save' as any)
+  workflow.addEdge('save' as any, END as any)
 
   return workflow.compile()
 }

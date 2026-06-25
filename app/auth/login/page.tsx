@@ -29,42 +29,66 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="w-full max-w-md"
+        className="w-full max-w-sm"
       >
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">CivicPulse</h1>
-          <p className="text-slate-400">Report issues. Track resolutions. Build your city.</p>
+        <div className="text-center mb-6">
+          {/* GitHub logo placeholder or simple text */}
+          <h1 className="text-2xl font-semibold text-foreground mb-1 tracking-tight">Sign in to CivicPulse</h1>
         </div>
 
-        <Card className="bg-slate-900 border-slate-800">
-          <CardHeader>
-            <CardTitle className="text-white">Sign in</CardTitle>
-            <CardDescription className="text-slate-400">
-              Use your Google account or email to continue
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <Card className="bg-card border-border shadow-sm">
+          <CardContent className="p-4 space-y-4 pt-6">
             {sent ? (
-              <div className="text-center py-6">
-                <p className="text-green-400 font-medium">Check your email</p>
-                <p className="text-slate-400 text-sm mt-2">
+              <div className="text-center py-4">
+                <p className="text-[#2da44e] font-medium">Check your email</p>
+                <p className="text-muted-foreground text-sm mt-2">
                   We sent a magic link to {email}
                 </p>
               </div>
             ) : (
               <>
+                <form onSubmit={handleEmailLogin} className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-sm font-medium text-foreground block">Email address</label>
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={e => setEmail(e.target.value)}
+                      required
+                      className="bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-1 focus-visible:ring-[#0969da]"
+                    />
+                  </div>
+                  {error && <p className="text-[#cf222e] text-xs">{error}</p>}
+                  <Button
+                    type="submit"
+                    className="w-full bg-[#2da44e] hover:bg-[#2c974b] text-white font-semibold shadow-sm border border-[#2da44e]"
+                    disabled={loading}
+                  >
+                    {loading ? 'Sending...' : 'Sign in'}
+                  </Button>
+                </form>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground font-semibold">or</span>
+                  </div>
+                </div>
+
                 <form action={signInWithGoogle}>
                   <Button
                     type="submit"
                     variant="outline"
-                    className="w-full border-slate-700 text-white hover:bg-slate-800"
+                    className="w-full border-border text-foreground hover:bg-muted font-semibold shadow-sm"
                   >
-                    <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 mr-2" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                       <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                       <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
@@ -73,38 +97,16 @@ export default function LoginPage() {
                     Continue with Google
                   </Button>
                 </form>
-
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-slate-700" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-slate-900 px-2 text-slate-500">or</span>
-                  </div>
-                </div>
-
-                <form onSubmit={handleEmailLogin} className="space-y-3">
-                  <Input
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    required
-                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500"
-                  />
-                  {error && <p className="text-red-400 text-sm">{error}</p>}
-                  <Button
-                    type="submit"
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={loading}
-                  >
-                    {loading ? 'Sending...' : 'Send magic link'}
-                  </Button>
-                </form>
               </>
             )}
           </CardContent>
         </Card>
+        
+        <div className="mt-4 text-center">
+          <p className="text-xs text-muted-foreground border border-transparent hover:border-border p-4 rounded-md transition-colors">
+            New to CivicPulse? <span className="text-[#0969da] cursor-pointer hover:underline">Create an account.</span>
+          </p>
+        </div>
       </motion.div>
     </div>
   )

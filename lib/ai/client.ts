@@ -61,6 +61,17 @@ function getOllamaClient(): OpenAI {
   return _ollamaClient
 }
 
+let _ollamaLocalClient: OpenAI | null = null
+function getOllamaLocalClient(): OpenAI {
+  if (!_ollamaLocalClient) {
+    _ollamaLocalClient = new OpenAI({
+      baseURL: process.env.OLLAMA_LOCAL_BASE_URL || 'http://localhost:11434/v1',
+      apiKey: 'ollama', // local ollama API doesn't enforce this, but OpenAI client requires a value
+    })
+  }
+  return _ollamaLocalClient
+}
+
 function getOllamaFlashModel(): string {
   // A capable mid-size model — fast, good at structured output
   return process.env.OLLAMA_FLASH_MODEL || 'qwen3:30b-a3b'
@@ -166,10 +177,22 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
 
 /**
  * Generate a text embedding.
- * ALWAYS uses Google's gemini-embedding-001 (768-dim) regardless of AI_PROVIDER,
- * because the pgvector column is fixed at 768 dimensions.
+ * Uses Google's gemini-embedding-001 or Ollama's nomic-embed-text.
+ * Both output 768 dimensions matching the pgvector column.
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
+  const provider = getProvider()
+
+  if (provider === 'ollama') {
+    const client = getOllamaLocalClient()
+    const embeddingModel = process.env.OLLAMA_EMBEDDING_MODEL || 'nomic-embed-text'
+    const response = await client.embeddings.create({
+      model: embeddingModel,
+      input: text,
+    })
+    return response.data[0].embedding
+  }
+
   const model = getGenAI().getGenerativeModel({ model: 'gemini-embedding-001' })
   const result = await model.embedContent(text)
   return result.embedding.values

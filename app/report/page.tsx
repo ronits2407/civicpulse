@@ -103,18 +103,18 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4">
+    <div className="min-h-screen bg-background p-4">
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-3 mb-6 pt-4">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => router.push('/dashboard')}
-            className="text-slate-400 hover:text-white"
+            className="text-muted-foreground hover:text-foreground"
           >
             ← Back
           </Button>
-          <h1 className="text-xl font-semibold text-white">Report an Issue</h1>
+          <h1 className="text-xl font-semibold text-foreground">Report an Issue</h1>
         </div>
 
         <AnimatePresence mode="wait">
@@ -126,9 +126,9 @@ export default function ReportPage() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-4"
             >
-              <Card className="bg-slate-900 border-slate-800">
+              <Card className="bg-card border-border">
                 <CardHeader>
-                  <CardTitle className="text-white text-lg">
+                  <CardTitle className="text-foreground text-lg">
                     What's the issue?
                   </CardTitle>
                 </CardHeader>
@@ -137,7 +137,7 @@ export default function ReportPage() {
                     placeholder="Describe the problem... e.g. There's a large pothole on MG Road near the clock tower, it damaged my bike yesterday"
                     value={text}
                     onChange={e => setText(e.target.value)}
-                    className="bg-slate-800 border-slate-700 text-white placeholder:text-slate-500 min-h-[120px] resize-none"
+                    className="bg-muted border-border text-foreground placeholder:text-muted-foreground min-h-[120px] resize-none"
                   />
 
                   {imagePreview && (
@@ -161,7 +161,7 @@ export default function ReportPage() {
                   <div className="flex gap-3">
                     <Button
                       variant="outline"
-                      className="flex-1 border-slate-700 text-slate-300 hover:bg-slate-800"
+                      className="flex-1 border-border text-foreground hover:bg-muted"
                       onClick={() => fileRef.current?.click()}
                     >
                       <Camera className="w-4 h-4 mr-2" />
@@ -183,7 +183,7 @@ export default function ReportPage() {
                   <Button
                     onClick={handleSubmit}
                     disabled={!text.trim()}
-                    className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40"
+                    className="w-full bg-[#2da44e] hover:bg-[#2c974b] disabled:opacity-40"
                   >
                     <Send className="w-4 h-4 mr-2" />
                     Submit Report
@@ -201,12 +201,12 @@ export default function ReportPage() {
               exit={{ opacity: 0 }}
               className="flex flex-col items-center justify-center py-20 gap-6"
             >
-              <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+              <Loader2 className="w-12 h-12 text-[#0969da] animate-spin" />
               <div className="text-center">
-                <p className="text-white font-medium">
+                <p className="text-foreground font-medium">
                   {step === 'locating' ? 'Getting your location...' : 'AI is analyzing your report...'}
                 </p>
-                <p className="text-slate-400 text-sm mt-1">
+                <p className="text-muted-foreground text-sm mt-1">
                   {step === 'processing' && 'Classifying, validating, and routing to the right department'}
                 </p>
               </div>
@@ -221,11 +221,11 @@ export default function ReportPage() {
               className="space-y-4"
             >
               <div className="flex flex-col items-center py-8 gap-3">
-                <CheckCircle className="w-16 h-16 text-green-500" />
-                <h2 className="text-2xl font-bold text-white">
+                <CheckCircle className="w-16 h-16 text-[#2da44e]" />
+                <h2 className="text-2xl font-bold text-foreground">
                   {result.isDuplicate ? 'Issue Already Tracked' : 'Report Submitted'}
                 </h2>
-                <p className="text-slate-400 text-center text-sm">
+                <p className="text-muted-foreground text-center text-sm">
                   {result.isDuplicate
                     ? 'Your report has been added to an existing cluster. More voices = faster resolution.'
                     : 'Your report is now in the civic system.'}
@@ -233,38 +233,38 @@ export default function ReportPage() {
               </div>
 
               {!result.isDuplicate && result.classification && (
-                <Card className="bg-slate-900 border-slate-800">
+                <Card className="bg-card border-border">
                   <CardContent className="pt-6 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400 text-sm">Category</span>
+                      <span className="text-muted-foreground text-sm">Category</span>
                       <Badge variant="secondary" className="capitalize">
                         {result.classification.category}
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400 text-sm">Severity</span>
+                      <span className="text-muted-foreground text-sm">Severity</span>
                       <Badge
                         className={
                           result.classification.severity >= 7
                             ? 'bg-red-500'
                             : result.classification.severity >= 4
                             ? 'bg-yellow-500'
-                            : 'bg-green-500'
+                            : 'bg-[#2da44e]'
                         }
                       >
                         {result.classification.severity}/10
                       </Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400 text-sm">Credibility</span>
-                      <span className="text-white text-sm font-medium">
+                      <span className="text-muted-foreground text-sm">Credibility</span>
+                      <span className="text-foreground text-sm font-medium">
                         {result.credibilityScore}/10
                       </span>
                     </div>
                     {result.slaDeadline && (
                       <div className="flex items-center justify-between">
-                        <span className="text-slate-400 text-sm">Resolution by</span>
-                        <span className="text-white text-sm">
+                        <span className="text-muted-foreground text-sm">Resolution by</span>
+                        <span className="text-foreground text-sm">
                           {new Date(result.slaDeadline).toLocaleDateString('en-IN', {
                             day: 'numeric', month: 'short', year: 'numeric'
                           })}
@@ -285,13 +285,13 @@ export default function ReportPage() {
               <div className="flex gap-3">
                 <Button
                   variant="outline"
-                  className="flex-1 border-slate-700 text-white hover:bg-slate-800"
+                  className="flex-1 border-border text-foreground hover:bg-muted"
                   onClick={() => router.push('/dashboard')}
                 >
                   View Dashboard
                 </Button>
                 <Button
-                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                  className="flex-1 bg-[#2da44e] hover:bg-[#2c974b]"
                   onClick={() => {
                     setText('')
                     setImageFile(null)

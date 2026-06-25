@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="dark">
-      <body className={`${inter.className} bg-slate-950 text-slate-50 antialiased`}>
+      <body className={`${inter.className} bg-background text-foreground antialiased`}>
         {children}
         <Toaster position="top-right" closeButton />
       </body>

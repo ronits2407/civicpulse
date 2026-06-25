@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/db/server'
 import { createIssuePipeline } from '@/lib/agents/pipeline'
 import { generateEmbedding } from '@/lib/gemini/client'
+import { AgentState } from '@/lib/db/types'
 
 export async function POST(req: NextRequest) {
   try {
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
       error: null,
     }
 
-    const finalState = await pipeline.invoke(initialState)
+    const finalState = (await pipeline.invoke(initialState)) as unknown as AgentState
 
     return NextResponse.json({
       success: true,

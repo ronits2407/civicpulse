@@ -113,6 +113,12 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     }
   } catch (error: any) {
     console.error(`[Agent 4: Resolution Planner] Fatal error during resolution planning:`, error);
+    try {
+      const supabase = createServiceClient();
+      await supabase.from('issues').update({ pipeline_stage: 'agent4_resolution_failed' }).eq('id', state.reportId);
+    } catch (e) {
+      console.error(`[Agent 4: Resolution Planner] Failed to update pipeline_stage to failed:`, e);
+    }
     return {
       ...state,
       error: `Resolution agent failed: ${error.message}`,

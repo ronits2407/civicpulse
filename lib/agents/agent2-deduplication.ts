@@ -26,18 +26,46 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
       const topMatch = vectorMatches[0]
       console.log('[Agent 2: Deduplicator] Found vector match. Cluster ID:', topMatch.cluster_id || topMatch.id);
 
-      // Update current issue
-      await supabase.from('issues').update({ 
-        cluster_id: topMatch.cluster_id || topMatch.id,
+      let targetClusterId = topMatch.cluster_id;
+
+      if (!targetClusterId) {
+        console.log(`[Agent 2: Deduplicator] No existing cluster found for match. Creating new cluster...`);
+        const { data: newCluster, error: clusterError } = await supabase.from('issue_clusters').insert({
+          representative_issue_id: topMatch.id,
+          issue_count: 1,
+          category: topMatch.category || null
+        }).select().single();
+
+        if (clusterError) {
+          console.error(`[Agent 2: Deduplicator] Failed to create new cluster:`, clusterError);
+          throw new Error('Failed to create new cluster');
+        }
+
+        targetClusterId = newCluster.id;
+
+        // Also update the original matched issue to belong to this new cluster
+        await supabase.from('issues').update({ cluster_id: targetClusterId }).eq('id', topMatch.id);
+      }
+
+      console.log(`[Agent 2: Deduplicator] Updating current issue ${state.reportId} as duplicate (completed)...`);
+      const { error: updateError } = await supabase.from('issues').update({ 
+        cluster_id: targetClusterId,
         pipeline_stage: 'completed',
         status: 'closed'
       }).eq('id', state.reportId)
+
+      if (updateError) {
+        console.error(`[Agent 2: Deduplicator] Error updating duplicate issue:`, updateError);
+        throw new Error('Failed to update duplicate issue');
+      }
+      
+      console.log(`[Agent 2: Deduplicator] Completed successfully (Duplicate detected via vector).`);
 
       return {
         ...state,
         deduplication: {
           is_duplicate: true,
-          cluster_id: topMatch.cluster_id || topMatch.id,
+          cluster_id: targetClusterId,
           existing_issue_id: topMatch.id,
           similarity_score: topMatch.similarity,
         },
@@ -95,6 +123,12 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
     }
   } catch (error: any) {
     console.error('[Agent 2: Deduplicator] Fatal error during deduplication:', error);
+    try {
+      const supabase = createServiceClient();
+      await supabase.from('issues').update({ pipeline_stage: 'agent2_deduplication_failed' }).eq('id', state.reportId);
+    } catch (e) {
+      console.error('[Agent 2: Deduplicator] Failed to update pipeline_stage to failed:', e);
+    }
     return {
       ...state,
       error: `Deduplication agent failed: ${error.message}`,

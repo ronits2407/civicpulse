@@ -85,6 +85,12 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
     }
   } catch (error: any) {
     console.error(`[Agent 3: Validator] Fatal error during validation:`, error);
+    try {
+      const supabase = createServiceClient();
+      await supabase.from('issues').update({ pipeline_stage: 'agent3_validation_failed' }).eq('id', state.reportId);
+    } catch (e) {
+      console.error(`[Agent 3: Validator] Failed to update pipeline_stage to failed:`, e);
+    }
     return {
       ...state,
       error: `Validation agent failed: ${error.message}`,

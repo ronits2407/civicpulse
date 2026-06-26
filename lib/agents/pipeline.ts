@@ -17,7 +17,7 @@ function shouldContinueAfterValidation(state: AgentState): string {
   return 'resolve'
 }
 
-export async function createIssuePipeline() {
+export async function createIssuePipeline(startNode: 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'classify') {
   const workflow = new StateGraph<AgentState>({
     channels: {
       reportId: { value: (x: string, y: string) => y ?? x, default: () => '' },
@@ -39,7 +39,7 @@ export async function createIssuePipeline() {
   workflow.addNode('resolve', runResolutionAgent)
   workflow.addNode('save', saveToDatabase)
 
-  workflow.setEntryPoint('classify' as any)
+  workflow.setEntryPoint(startNode as any)
   workflow.addEdge('classify' as any, 'deduplicate' as any)
   workflow.addConditionalEdges('deduplicate' as any, shouldContinueAfterDedup, {
     validate: 'validate',
@@ -56,17 +56,32 @@ export async function createIssuePipeline() {
 }
 
 async function saveToDatabase(state: AgentState): Promise<AgentState> {
+  console.log(`[Pipeline] saveToDatabase triggered for issue ${state.reportId}`);
   try {
     const supabase = createServiceClient()
 
     if (state.deduplication?.is_duplicate && state.deduplication.existing_issue_id) {
-      await supabase.rpc('increment_cluster_count', {
+      console.log(`[Pipeline] Issue is a duplicate. Incrementing cluster count for ${state.deduplication.cluster_id}...`);
+      const { error } = await supabase.rpc('increment_cluster_count', {
         cluster_id: state.deduplication.cluster_id,
       })
+      if (error) {
+        console.error(`[Pipeline] Error incrementing cluster count:`, error);
+      } else {
+        console.log(`[Pipeline] Cluster count incremented successfully.`);
+      }
     }
 
+    console.log(`[Pipeline] Finished saveToDatabase for issue ${state.reportId}`);
     return state
   } catch (error: any) {
+    console.error(`[Pipeline] Fatal error in saveToDatabase:`, error);
+    try {
+      const supabase = createServiceClient();
+      await supabase.from('issues').update({ pipeline_stage: 'save_failed' }).eq('id', state.reportId);
+    } catch (e) {
+      console.error('[Pipeline] Failed to update pipeline_stage to failed:', e);
+    }
     return {
       ...state,
       error: `Database save failed: ${error.message}`,

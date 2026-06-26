@@ -135,16 +135,21 @@ function getKarmaLevel(score: number) {
   return { name: 'Civic Observer', level: 1, min: 0, max: 50, next: 'Civic Guardian' }
 }
 
-export type PipelineState = 'done' | 'in_progress' | 'pending' | 'failed'
+export type PipelineState = 'done' | 'in_progress' | 'pending' | 'failed' | 'skipped'
 
-const getAgentState = (currentStage: string | null, targetStage: string): PipelineState => {
-  const stages = ['agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'agent4_resolution', 'completed', 'failed']
-  const currentIndex = currentStage ? stages.indexOf(currentStage) : -1
+const getAgentState = (currentStage: string | null, targetStage: string, isDuplicate?: boolean): PipelineState => {
+  if (isDuplicate && (targetStage === 'agent3_validation' || targetStage === 'agent4_resolution' || targetStage === 'agent5_predictive')) {
+    return 'skipped'
+  }
+
+  const stages = ['agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'agent4_resolution', 'completed']
+  const cleanCurrentStage = currentStage?.replace('_failed', '') || ''
+  const currentIndex = currentStage ? stages.indexOf(cleanCurrentStage) : -1
   const targetIndex = stages.indexOf(targetStage)
 
-  if (currentStage === 'failed') return 'failed'
+  if (currentStage === `${targetStage}_failed`) return 'failed'
   if (currentIndex > targetIndex || currentStage === 'completed') return 'done'
-  if (currentIndex === targetIndex) return 'in_progress'
+  if (currentIndex === targetIndex && !currentStage?.endsWith('_failed')) return 'in_progress'
   return 'pending'
 }
 
@@ -152,15 +157,29 @@ const AgentDot = ({ state }: { state: PipelineState }) => {
   if (state === 'done') return <div className="absolute -left-[33px] top-0.5 bg-[#2da44e] border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-emerald-500/30" />
   if (state === 'in_progress') return <div className="absolute -left-[33px] top-0.5 bg-amber-400 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-amber-500/30 animate-pulse" />
   if (state === 'failed') return <div className="absolute -left-[33px] top-0.5 bg-rose-500 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-rose-500/30" />
+  if (state === 'skipped') return <div className="absolute -left-[33px] top-0.5 bg-slate-600 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-slate-500/30" />
   return <div className="absolute -left-[33px] top-0.5 bg-slate-800 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md opacity-40" />
 }
 
-const AgentStatusBadge = ({ state }: { state: PipelineState }) => {
+const AgentStatusBadge = ({ state, issueId, onRetry }: { state: PipelineState, issueId: string, onRetry: (issueId: string) => void }) => {
   if (state === 'failed') {
-    return <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20 uppercase tracking-wide leading-none">FAILED</span>
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20 uppercase tracking-wide leading-none">FAILED</span>
+        <button 
+          onClick={() => onRetry(issueId)}
+          className="text-[9px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded border border-slate-600 transition-colors uppercase cursor-pointer"
+        >
+          Retry
+        </button>
+      </div>
+    )
   }
   if (state === 'done') {
     return <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
+  }
+  if (state === 'skipped') {
+    return <span className="text-[9px] font-bold text-slate-400 bg-slate-500/10 px-1.5 py-0.2 rounded border border-slate-500/20 uppercase tracking-wide leading-none">SKIPPED</span>
   }
   if (state === 'in_progress') {
     return <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 uppercase tracking-wide flex items-center gap-1"><Loader2 className="w-2.5 h-2.5 animate-spin" /> IN PROGRESS</span>
@@ -179,10 +198,28 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
   const [issues, setIssues] = useState<Issue[]>(initialIssues)
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   
-  // Search & Filter State
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'active', 'resolved'
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isRetrying, setIsRetrying] = useState(false)
+
+  const handleRetry = async (issueId: string) => {
+    setIsRetrying(true)
+    toast.loading('Resuming pipeline...', { id: 'retry-toast' })
+    try {
+      const res = await fetch('/api/reports/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ issueId })
+      })
+      if (!res.ok) throw new Error('Failed to resume pipeline')
+      toast.success('Pipeline resumed successfully', { id: 'retry-toast' })
+    } catch (err: any) {
+      toast.error(err.message, { id: 'retry-toast' })
+    } finally {
+      setIsRetrying(false)
+    }
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -793,7 +830,7 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                                   <Cpu className="w-3.5 h-3.5 text-[#0969da]" />
                                   Agent 1: Semantic Classifier
                                 </span>
-                                <AgentStatusBadge state={state1} />
+                                <AgentStatusBadge state={state1} issueId={selectedIssue.id} onRetry={handleRetry} />
                               </div>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Analyzed raw text/media, classified category, subcategory and mapped initial severity.
@@ -837,7 +874,7 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                                   <Database className="w-3.5 h-3.5 text-[#0969da]" />
                                   Agent 2: Vector Deduplicator
                                 </span>
-                                <AgentStatusBadge state={state2} />
+                                <AgentStatusBadge state={state2} issueId={selectedIssue.id} onRetry={handleRetry} />
                               </div>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Scanned localized pgvector database within a 200-meter radius to prevent duplicate reports.
@@ -845,8 +882,11 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                               {state2 === 'done' && (
                                 <div className="bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
                                   {selectedIssue.cluster_id ? (
-                                    <p className="text-muted-foreground font-medium">
-                                      Linked to Active Issue Cluster: <code className="bg-background px-1.5 py-0.5 rounded text-indigo-400 font-mono text-[9px]">{selectedIssue.cluster_id}</code>. Automatic aggregation enabled.
+                                    <p className="text-muted-foreground font-medium flex items-start gap-1.5">
+                                      <Database className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                      <span>
+                                        This issue matches an existing report in our system. We have automatically aggregated it with the original report to prioritize its resolution.
+                                      </span>
                                     </p>
                                   ) : (
                                     <p className="text-emerald-400 font-semibold flex items-center gap-1.5">
@@ -862,9 +902,10 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
 
                       {/* AGENT 3: VALIDATION */}
                       {(() => {
-                        const state3 = getAgentState(selectedIssue.pipeline_stage, 'agent3_validation')
+                        const isDuplicate = !!selectedIssue.cluster_id && selectedIssue.status === 'closed'
+                        const state3 = getAgentState(selectedIssue.pipeline_stage, 'agent3_validation', isDuplicate)
                         return (
-                          <div className={`relative ${state3 === 'pending' ? 'opacity-40' : ''}`}>
+                          <div className={`relative ${state3 === 'pending' || state3 === 'skipped' ? 'opacity-40' : ''}`}>
                             <AgentDot state={state3} />
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
@@ -872,7 +913,7 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                                   <ShieldCheck className="w-3.5 h-3.5 text-[#0969da]" />
                                   Agent 3: Credibility Validator
                                 </span>
-                                <AgentStatusBadge state={state3} />
+                                <AgentStatusBadge state={state3} issueId={selectedIssue.id} onRetry={handleRetry} />
                               </div>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Verified credibility index against historical data, user profile reliability, and weather datasets.
@@ -899,9 +940,10 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
 
                       {/* AGENT 4: RESOLUTION PLANNING */}
                       {(() => {
-                        const state4 = getAgentState(selectedIssue.pipeline_stage, 'agent4_resolution')
+                        const isDuplicate = !!selectedIssue.cluster_id && selectedIssue.status === 'closed'
+                        const state4 = getAgentState(selectedIssue.pipeline_stage, 'agent4_resolution', isDuplicate)
                         return (
-                          <div className={`relative ${state4 === 'pending' ? 'opacity-40' : ''}`}>
+                          <div className={`relative ${state4 === 'pending' || state4 === 'skipped' ? 'opacity-40' : ''}`}>
                             <AgentDot state={state4} />
                             <div className="space-y-2">
                               <div className="flex items-center gap-2">
@@ -909,7 +951,7 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                                   <Sparkles className="w-3.5 h-3.5 text-[#0969da]" />
                                   Agent 4: Resolution Routing & SLA Planner
                                 </span>
-                                <AgentStatusBadge state={state4} />
+                                <AgentStatusBadge state={state4} issueId={selectedIssue.id} onRetry={handleRetry} />
                               </div>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Generated a concise civic action brief for department staff and computed completion SLA.
@@ -938,17 +980,22 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
 
                       {/* AGENT 5: PREDICTIVE ANALYTICS */}
                       {(() => {
-                        const state5 = getAgentState(selectedIssue.pipeline_stage, 'completed')
+                        const isDuplicate = !!selectedIssue.cluster_id && selectedIssue.status === 'closed'
+                        const state5 = getAgentState(selectedIssue.pipeline_stage, 'agent5_predictive', isDuplicate)
                         return (
-                          <div className={`relative ${state5 === 'pending' ? 'opacity-40' : ''}`}>
-                            <div className={`absolute -left-[33px] top-0.5 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${state5 === 'done' ? 'bg-[#2da44e] shadow-emerald-500/30' : 'bg-slate-800 opacity-40'}`} />
+                          <div className={`relative ${state5 === 'pending' || state5 === 'skipped' ? 'opacity-40' : ''}`}>
+                            <div className={`absolute -left-[33px] top-0.5 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${state5 === 'done' ? 'bg-[#2da44e] shadow-emerald-500/30' : state5 === 'skipped' ? 'bg-slate-600 shadow-slate-500/30' : 'bg-slate-800 opacity-40'}`} />
                             <div className="space-y-1">
                               <div className="flex items-center gap-2">
                                 <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 leading-none">
                                   <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
                                   Agent 5: Predictive Analytics Agent
                                 </span>
-                                <span className="text-[9px] font-bold text-muted-foreground bg-card px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">SCHEDULED</span>
+                                {state5 === 'skipped' ? (
+                                  <span className="text-[9px] font-bold text-slate-400 bg-slate-500/10 px-1.5 py-0.2 rounded border border-slate-500/20 uppercase tracking-wide leading-none">SKIPPED</span>
+                                ) : (
+                                  <span className="text-[9px] font-bold text-muted-foreground bg-card px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">SCHEDULED</span>
+                                )}
                               </div>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Runs asynchronously to analyze ward-level trends and predict seasonal civic issues.

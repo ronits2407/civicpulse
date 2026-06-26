@@ -74,12 +74,19 @@ export async function runClassifierAgent(state: AgentState): Promise<AgentState>
       pipeline_stage: 'agent2_deduplication'
     }).eq('id', state.reportId)
 
+    console.log('[Agent 1: Classifier] Completed successfully.');
     return {
       ...state,
       classification,
     }
   } catch (error: any) {
     console.error('[Agent 1: Classifier] Fatal error during classification:', error);
+    try {
+      const supabase = createServiceClient();
+      await supabase.from('issues').update({ pipeline_stage: 'agent1_classifier_failed' }).eq('id', state.reportId);
+    } catch (e) {
+      console.error('[Agent 1: Classifier] Failed to update pipeline_stage to failed:', e);
+    }
     return {
       ...state,
       error: `Classifier agent failed: ${error.message}`,

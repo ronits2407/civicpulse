@@ -46,6 +46,26 @@ export async function PATCH(
 
     if (error) throw error
 
+    // Grant karma if resolved
+    if (updates.status === 'resolved' && data.user_id) {
+      // Check if already awarded (simple check to prevent spam clicks on frontend)
+      const { data: existingKarma } = await serviceClient
+        .from('karma_events')
+        .select('id')
+        .eq('issue_id', issueId)
+        .eq('event_type', 'issue_resolved')
+        .single()
+        
+      if (!existingKarma) {
+        await serviceClient.from('karma_events').insert({
+          user_id: data.user_id,
+          event_type: 'issue_resolved',
+          points: 50,
+          issue_id: issueId,
+        })
+      }
+    }
+
     return NextResponse.json({ issue: data })
   } catch (error: any) {
     console.error('Update issue error:', error)

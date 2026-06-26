@@ -37,6 +37,14 @@ export async function POST(req: NextRequest) {
 
     if (insertError) throw insertError
 
+    // Award +10 karma for reporting an issue
+    await supabase.from('karma_events').insert({
+      user_id: userId,
+      event_type: 'issue_reported',
+      points: 10,
+      issue_id: issue.id,
+    })
+
     const pipeline = await createIssuePipeline()
 
     const initialState = {

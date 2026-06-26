@@ -657,18 +657,6 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
 
                             {/* Status, Severity & Chevron */}
                             <div className="flex items-center gap-3 shrink-0">
-                              <div className="flex flex-col items-end gap-1.5">
-                                {/* Status Badge */}
-                                <span className={`inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full border shadow-sm ${status.bgClass} ${status.borderClass} ${status.textClass}`}>
-                                  <span className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
-                                  {status.label}
-                                </span>
-
-                                {/* Severity Badge */}
-                                <span className={`inline-flex text-[8px] font-semibold px-2 py-0.5 rounded-full border uppercase tracking-wider ${severity.color}`}>
-                                  {severity.text.split(' ')[0]} Sev
-                                </span>
-                              </div>
 
                               <ChevronRight className="w-4 h-4 text-muted-foreground group-hover/card:text-foreground transition-colors group-hover/card:translate-x-0.5 duration-200" />
                             </div>

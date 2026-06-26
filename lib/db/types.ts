@@ -84,6 +84,7 @@ export interface AgentState {
   validation: ValidationResult | null
   resolution: ResolutionResult | null
   error: string | null
+  imageAnalysis?: string
 }
 
 export interface ClassificationResult {

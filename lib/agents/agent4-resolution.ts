@@ -21,6 +21,7 @@ function getSLAHours(category: string, severity: number): number {
 
 const BRIEF_PROMPT = (
   text: string,
+  imageAnalysis: string,
   classification: any,
   address: string,
   history: string
@@ -28,6 +29,7 @@ const BRIEF_PROMPT = (
 Draft a professional civic action brief for this issue.
 
 Citizen report: "${text}"
+Visual Evidence Analysis: ${imageAnalysis || 'None provided'}
 Location: ${address}
 Category: ${classification.category} / ${classification.subcategory}
 Severity: ${classification.severity}/10
@@ -86,6 +88,7 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     const resolution = await generateStructuredJSON<ResolutionResult>(
       BRIEF_PROMPT(
         state.rawText,
+        state.imageAnalysis || '',
         state.classification,
         'Location coordinates: ' + JSON.stringify(state.coordinates),
         historyContext

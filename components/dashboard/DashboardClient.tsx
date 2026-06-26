@@ -166,7 +166,7 @@ const AgentStatusBadge = ({ state, issueId, onRetry }: { state: PipelineState, i
     return (
       <div className="flex items-center gap-2">
         <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20 uppercase tracking-wide leading-none">FAILED</span>
-        <button 
+        <button
           onClick={() => onRetry(issueId)}
           className="text-[9px] font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 px-2 py-0.5 rounded border border-slate-600 transition-colors uppercase cursor-pointer"
         >
@@ -198,7 +198,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
   const router = useRouter()
   const [issues, setIssues] = useState<Issue[]>(initialIssues)
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
-  
+
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'active', 'resolved'
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
   const [isProfileOpen, setIsProfileOpen] = useState(false)
@@ -254,7 +254,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
             })
             // Update selected issue if it's currently open
             setSelectedIssue(prev => (prev?.id === updatedIssue.id ? updatedIssue : prev))
-            
+
             toast.info('Status Updated', {
               description: `"${updatedIssue.title || 'Your report'}" status is now ${STATUS_DETAILS[updatedIssue.status]?.label || updatedIssue.status}.`,
             })
@@ -265,7 +265,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
               if (prev.some(i => i.id === newIssue.id)) return prev
               return [newIssue, ...prev]
             })
-            
+
             toast.success('New Issue Registered', {
               description: `"${newIssue.title || 'Your report'}" has been successfully processed by the AI pipeline.`,
             })
@@ -413,10 +413,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
+
           {/* LEFT COLUMN: Profile & Action & Stats */}
           <div className="lg:col-span-1 space-y-6">
-            
+
 
             {/* Quick Actions (Large Primary Button) */}
             <Button
@@ -487,7 +487,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
           {/* RIGHT COLUMN: Search, Filters, and Feed */}
           <div className="lg:col-span-2 space-y-6">
-            
+
             {/* Feed Controls Header */}
             <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -513,11 +513,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     <button
                       key={tab.id}
                       onClick={() => setStatusFilter(tab.id)}
-                      className={`flex-1 text-center text-[10px] font-semibold py-1.5 rounded-lg transition-all ${
-                        statusFilter === tab.id
+                      className={`flex-1 text-center text-[10px] font-semibold py-1.5 rounded-lg transition-all ${statusFilter === tab.id
                           ? 'bg-card text-[#0969da] border border-slate-850 shadow-sm'
                           : 'text-muted-foreground hover:text-muted-foreground'
-                      }`}
+                        }`}
                     >
                       {tab.label}
                     </button>
@@ -529,11 +528,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
               <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 <button
                   onClick={() => setCategoryFilter('all')}
-                  className={`text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${
-                    categoryFilter === 'all'
+                  className={`text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${categoryFilter === 'all'
                       ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
                       : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
-                  }`}
+                    }`}
                 >
                   All Categories
                 </button>
@@ -544,11 +542,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     <button
                       key={key}
                       onClick={() => setCategoryFilter(key)}
-                      className={`flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${
-                        isActive
+                      className={`flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${isActive
                           ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
                           : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
-                      }`}
+                        }`}
                     >
                       <Icon className="w-3 h-3" />
                       {value.label}
@@ -657,7 +654,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                 <h3 className="text-xs font-semibold text-foreground truncate leading-tight group-hover/card:text-[#0969da] transition-colors">
                                   {issue.title || issue.description?.slice(0, 60) + '...'}
                                 </h3>
-                                
+
                                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2">
                                   <div className="flex items-center gap-1 text-muted-foreground shrink-0">
                                     <MapPin className="w-3 h-3 text-muted-foreground" />
@@ -722,7 +719,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
           return (
             <DialogContent className="bg-background border-border text-foreground w-[95vw] max-w-5xl sm:max-w-5xl overflow-y-auto max-h-[85vh] p-0 rounded-2xl shadow-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
               <div className="p-8">
-                
+
                 {/* Header Information (Top Row) */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                   <div className="flex items-center gap-4">
@@ -771,7 +768,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
                 {/* Single Column Layout */}
                 <div className="space-y-8">
-                  
+
                   {/* Description */}
                   <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line font-medium">
                     {selectedIssue.description}
@@ -782,7 +779,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none">
                       <Building className="w-4 h-4 text-muted-foreground" /> Administrative Routing Details
                     </h4>
-                    
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-0.5">
                         <span className="text-[10px] text-muted-foreground font-semibold">Assigned Department</span>
@@ -808,9 +805,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               })}
                             </p>
                             {slaDays !== null && (
-                              <p className={`text-[10px] font-semibold mt-1 ${
-                                slaDays < 0 ? 'text-rose-400' : 'text-amber-400'
-                              }`}>
+                              <p className={`text-[10px] font-semibold mt-1 ${slaDays < 0 ? 'text-rose-400' : 'text-amber-400'
+                                }`}>
                                 {slaDays < 0 ? `Overdue by ${Math.abs(slaDays)} days` : slaDays === 0 ? 'Due today' : `${slaDays} days remaining`}
                               </p>
                             )}
@@ -829,7 +825,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     </h4>
 
                     <div className="relative pl-6 border-l-2 border-border/80 space-y-7 ml-2">
-                      
+
                       {/* AGENT 1: CLASSIFIER */}
                       {(() => {
                         const state1 = getAgentState(selectedIssue.pipeline_stage, 'agent1_classifier')
@@ -847,22 +843,21 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Analyzed raw text/media, classified category, subcategory and mapped initial severity.
                               </p>
-                              
+
                               {state1 === 'done' && (
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
                                   <div>
                                     <span className="text-muted-foreground font-semibold">Subcategory:</span>
                                     <span className="text-muted-foreground ml-1 font-medium capitalize">{selectedIssue.subcategory || 'N/A'}</span>
                                   </div>
-                                  
+
                                   <div className="flex items-center gap-1.5">
                                     <span className="text-muted-foreground font-semibold">Severity Score:</span>
                                     <span className={`font-bold ${severity.color.split(' ')[0]}`}>{selectedIssue.severity}/10</span>
                                     <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
                                       <div
-                                        className={`h-full rounded-full ${
-                                          selectedIssue.severity >= 7 ? 'bg-rose-500' : selectedIssue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500'
-                                        }`}
+                                        className={`h-full rounded-full ${selectedIssue.severity >= 7 ? 'bg-rose-500' : selectedIssue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500'
+                                          }`}
                                         style={{ width: `${(selectedIssue.severity || 0) * 10}%` }}
                                       />
                                     </div>
@@ -930,7 +925,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Verified credibility index against historical data, user profile reliability, and weather datasets.
                               </p>
-                              
+
                               {state3 === 'done' && (
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
                                   <div>
@@ -941,12 +936,20 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground font-semibold">Automatic Validation:</span>
-                                    {selectedIssue.credibility_score && selectedIssue.credibility_score >= 6 ? (
-                                      <span className="text-emerald-400 ml-1 font-semibold">Approved (score ≥ 60%)</span>
+                                    {selectedIssue.needs_community_verification === false ? (
+                                      <span className="text-emerald-400 ml-1 font-semibold">Approved (by AI)</span>
+                                    ) : selectedIssue.needs_community_verification === true ? (
+                                      <span className="text-amber-400 ml-1 font-semibold">Community Review Required</span>
                                     ) : (
-                                      <span className="text-amber-400 ml-1 font-semibold">Community Review Required (score &lt; 60%)</span>
+                                      <span className="text-muted-foreground ml-1">Pending</span>
                                     )}
                                   </div>
+                                  {selectedIssue.reasoning && (
+                                    <div className="w-full mt-1">
+                                      <span className="text-muted-foreground font-semibold">AI Reasoning: </span>
+                                      <span className="text-foreground">{selectedIssue.reasoning}</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -972,7 +975,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Generated a concise civic action brief for department staff and computed completion SLA.
                               </p>
-                              
+
                               {state4 === 'done' && (
                                 <>
                                   {selectedIssue.civic_brief ? (

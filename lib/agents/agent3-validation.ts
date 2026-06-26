@@ -75,6 +75,8 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
     console.log(`[Agent 3: Validator] Advancing pipeline stage and updating credibility score...`);
     const { error: updateError } = await supabase.from('issues').update({
       credibility_score: validation.credibility_score,
+      needs_community_verification: validation.needs_community_verification,
+      reasoning: validation.reasoning,
       pipeline_stage: 'agent4_resolution'
     }).eq('id', state.reportId)
 

@@ -149,11 +149,24 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
       throw new Error(`Failed to download image from ${imageUrl}: ${imageResponse.status} ${imageResponse.statusText}`);
     }
     const imageData = await imageResponse.arrayBuffer()
-    const base64Image = Buffer.from(imageData).toString('base64')
+    let buffer = Buffer.from(imageData)
     let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-    if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
+    
+    try {
+      const sharp = (await import('sharp')).default
+      buffer = await sharp(buffer)
+        .resize({ width: 1024, withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toBuffer()
+      mimeType = 'image/jpeg'
+    } catch (e) {
+      console.warn('[AI Client] Sharp image optimization skipped/failed:', e)
+      if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
+    }
+    
+    const base64Image = buffer.toString('base64')
 
-    const visionModel = process.env.OLLAMA_VISION_MODEL || 'qwen2.5vl:72b-instruct-q4_K_M'
+    const visionModel = process.env.OLLAMA_VISION_MODEL || 'llava'
     const client = getOllamaClient()
 
     const response = await client.chat.completions.create({
@@ -177,7 +190,7 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
   }
 
   // Default: Gemini Flash (multimodal)
-  const model = getGenAI().getGenerativeModel({ 
+  const model = getGenAI().getGenerativeModel({
     model: 'gemini-2.5-flash',
     generationConfig: { temperature: 0.1 }
   })
@@ -186,9 +199,22 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
     throw new Error(`Failed to download image from ${imageUrl}: ${imageResponse.status} ${imageResponse.statusText}`);
   }
   const imageData = await imageResponse.arrayBuffer()
-  const base64Image = Buffer.from(imageData).toString('base64')
+  let buffer = Buffer.from(imageData)
   let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-  if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
+
+  try {
+    const sharp = (await import('sharp')).default
+    buffer = await sharp(buffer)
+      .resize({ width: 1024, withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer()
+    mimeType = 'image/jpeg'
+  } catch (e) {
+    console.warn('[AI Client] Sharp image optimization skipped/failed:', e)
+    if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
+  }
+
+  const base64Image = buffer.toString('base64')
 
   const result = await model.generateContent([
     { inlineData: { data: base64Image, mimeType: mimeType as any } },

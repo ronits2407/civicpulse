@@ -31,6 +31,8 @@ export interface Issue {
   credibility_score: number | null
   cluster_id: string | null
   department_id: string | null
+  needs_community_verification: boolean | null
+  reasoning: string | null
   civic_brief: string | null
   sla_deadline: string | null
   resolved_at: string | null

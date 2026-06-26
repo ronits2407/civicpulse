@@ -45,10 +45,12 @@ import {
   CheckSquare,
   Info,
   FileText,
-  Loader2
+  Loader2,
+  Globe,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { IssueMapPanel } from './IssueMapPanel'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -207,6 +209,18 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
   const [nearbyReviews, setNearbyReviews] = useState<Issue[]>([])
   const [isFetchingReviews, setIsFetchingReviews] = useState(false)
   const [voteTally, setVoteTally] = useState<{ confirms: number; denies: number } | null>(null)
+  const [isMapOpen, setIsMapOpen] = useState(false)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+
+  // Get user's geolocation once on mount for the map center
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {} // silently fall back to Nashik center in the map component
+      )
+    }
+  }, [])
 
   useEffect(() => {
     if (selectedIssue?.status === 'community_review') {
@@ -567,6 +581,18 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
               <div className="flex items-center justify-center gap-2">
                 <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
                 Report a New Issue
+              </div>
+            </Button>
+
+            {/* Map View Button */}
+            <Button
+              onClick={() => setIsMapOpen(true)}
+              variant="outline"
+              className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
+                <span className="text-sm font-semibold">View Issue Map</span>
               </div>
             </Button>
 
@@ -1256,6 +1282,13 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
           )
         })()}
       </Dialog>
+
+      {/* City-Wide Issue Map Panel */}
+      <IssueMapPanel
+        isOpen={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+        userLocation={userLocation}
+      />
     </div>
   )
 }

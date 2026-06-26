@@ -1,15 +1,14 @@
-'use client'
+﻿'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/db/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, MapPin, Send, Loader2 } from 'lucide-react'
+import { Camera, Send, Loader2, Navigation, Map, CheckCircle2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { LocationPickerPanel } from '@/components/report/LocationPickerPanel'
 
 export default function ReportPage() {
   const router = useRouter()
@@ -19,13 +18,17 @@ export default function ReportPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [coordinates, setCoordinates] = useState<{lat: number, lng: number, address: string} | null>(null)
+  const [coordinates, setCoordinates] = useState<{ lat: number; lng: number; address: string } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
-  useEffect(() => {
-    getLocation().then(setCoordinates).catch(console.error)
-  }, [])
+  // Location state
+  const [locationMode, setLocationMode] = useState<'none' | 'gps' | 'map'>('none')
+  const [isGettingGPS, setIsGettingGPS] = useState(false)
+  const [isMapOpen, setIsMapOpen] = useState(false)
 
+  // ----------------------------------------------------------------
+  // Image handlers
+  // ----------------------------------------------------------------
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -52,26 +55,48 @@ export default function ReportPage() {
     setImagePreview(URL.createObjectURL(file))
   }
 
-  async function getLocation(): Promise<{ lat: number; lng: number; address: string }> {
-    return new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        async pos => {
-          const { latitude: lat, longitude: lng } = pos.coords
-          try {
-            const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
-            const data = await res.json()
-            const address = data.address || `${lat}, ${lng}`
-            resolve({ lat, lng, address })
-          } catch {
-            resolve({ lat, lng, address: `${lat}, ${lng}` })
-          }
-        },
-        reject,
-        { enableHighAccuracy: true, timeout: 10000 }
-      )
-    })
+  // ----------------------------------------------------------------
+  // GPS location
+  // ----------------------------------------------------------------
+  async function handleUseCurrentLocation() {
+    setIsGettingGPS(true)
+    toast.loading('Getting your location...', { id: 'gps-toast' })
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(
+          resolve,
+          reject,
+          { enableHighAccuracy: true, timeout: 10000 }
+        )
+      })
+      const { latitude: lat, longitude: lng } = pos.coords
+      let address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`
+      try {
+        const res = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
+        const data = await res.json()
+        if (data.address) address = data.address
+      } catch {}
+      setCoordinates({ lat, lng, address })
+      setLocationMode('gps')
+      toast.success('Location captured!', { id: 'gps-toast' })
+    } catch {
+      toast.error('Could not get your location. Please allow location access.', { id: 'gps-toast' })
+    } finally {
+      setIsGettingGPS(false)
+    }
   }
 
+  // ----------------------------------------------------------------
+  // Map picker confirm
+  // ----------------------------------------------------------------
+  function handleMapConfirm(loc: { lat: number; lng: number }, address: string) {
+    setCoordinates({ lat: loc.lat, lng: loc.lng, address })
+    setLocationMode('map')
+  }
+
+  // ----------------------------------------------------------------
+  // Submit
+  // ----------------------------------------------------------------
   async function handleSubmit() {
     if (!text.trim() || isSubmitting) return
     setError('')
@@ -79,9 +104,19 @@ export default function ReportPage() {
 
     try {
       let finalCoords = coordinates
+
+      // If no location picked, silently try GPS one last time
       if (!finalCoords) {
-        finalCoords = await getLocation()
-        setCoordinates(finalCoords)
+        try {
+          const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+          })
+          finalCoords = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            address: `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`,
+          }
+        } catch {}
       }
 
       const supabase = createClient()
@@ -95,15 +130,10 @@ export default function ReportPage() {
           .from('issue-media')
           .upload(filename, imageFile)
 
-        if (uploadError) {
-          console.error('Image upload failed:', uploadError)
-          throw new Error(`Failed to upload image: ${uploadError.message}`)
-        }
+        if (uploadError) throw new Error(`Failed to upload image: ${uploadError.message}`)
 
         if (upload) {
-          const { data: urlData } = supabase.storage
-            .from('issue-media')
-            .getPublicUrl(upload.path)
+          const { data: urlData } = supabase.storage.from('issue-media').getPublicUrl(upload.path)
           imageUrl = urlData.publicUrl
         }
       }
@@ -111,12 +141,7 @@ export default function ReportPage() {
       const response = await fetch('/api/reports/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text,
-          imageUrl,
-          coordinates: finalCoords,
-          userId: user.id,
-        }),
+        body: JSON.stringify({ text, imageUrl, coordinates: finalCoords, userId: user.id }),
       })
 
       const data = await response.json()
@@ -167,6 +192,7 @@ export default function ReportPage() {
             <label className="block text-sm font-semibold text-foreground mb-2">Upload your image</label>
             {imagePreview ? (
               <div className="relative rounded-xl overflow-hidden border border-border group max-w-md mx-auto">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imagePreview}
                   alt="Issue preview"
@@ -189,8 +215,8 @@ export default function ReportPage() {
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 group/upload ${
-                  isDragging 
-                    ? 'border-[#0969da] bg-[#0969da]/10' 
+                  isDragging
+                    ? 'border-[#0969da] bg-[#0969da]/10'
                     : 'border-border hover:bg-muted/30'
                 }`}
               >
@@ -204,20 +230,99 @@ export default function ReportPage() {
                 </div>
               </div>
             )}
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleImageSelect}
-            />
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
           </div>
 
-          {error && (
-            <p className="text-red-400 text-sm">{error}</p>
-          )}
+          {/* Location Section */}
+          <div>
+            <label className="block text-sm font-semibold text-foreground mb-3">
+              Issue location
+              <span className="ml-2 text-xs font-normal text-muted-foreground">(helps route to the right department)</span>
+            </label>
 
-          {/* Submit Button */}
+            <AnimatePresence mode="wait">
+              {coordinates ? (
+                <motion.div
+                  key="location-set"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-start gap-3 bg-[#2da44e]/8 border border-[#2da44e]/25 rounded-xl px-4 py-3"
+                >
+                  <div className="mt-0.5 w-7 h-7 rounded-full bg-[#2da44e]/15 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4 text-[#2da44e]" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-[#2da44e] mb-0.5">
+                      {locationMode === 'gps' ? 'GPS Location Captured' : 'Map Location Set'}
+                    </p>
+                    <p className="text-sm text-foreground font-medium truncate">{coordinates.address}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {coordinates.lat.toFixed(5)}, {coordinates.lng.toFixed(5)}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setCoordinates(null); setLocationMode('none') }}
+                    className="text-muted-foreground hover:text-foreground transition-colors mt-0.5 shrink-0"
+                    title="Clear location"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="location-picker"
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ duration: 0.2 }}
+                  className="grid grid-cols-2 gap-3"
+                >
+                  {/* Option 1 - GPS */}
+                  <button
+                    type="button"
+                    onClick={handleUseCurrentLocation}
+                    disabled={isGettingGPS}
+                    className="group relative flex flex-col items-center gap-3 rounded-xl border border-border bg-card hover:border-[#0969da]/50 hover:bg-[#0969da]/5 transition-all duration-200 p-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#0969da]/10 border border-[#0969da]/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                      {isGettingGPS ? (
+                        <Loader2 className="w-5 h-5 text-[#0969da] animate-spin" />
+                      ) : (
+                        <Navigation className="w-5 h-5 text-[#0969da]" />
+                      )}
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-foreground leading-snug">
+                        {isGettingGPS ? 'Getting location...' : 'Use current location'}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Auto-detect via GPS</p>
+                    </div>
+                  </button>
+
+                  {/* Option 2 - Map picker */}
+                  <button
+                    type="button"
+                    onClick={() => setIsMapOpen(true)}
+                    className="group relative flex flex-col items-center gap-3 rounded-xl border border-border bg-card hover:border-[#2da44e]/50 hover:bg-[#2da44e]/5 transition-all duration-200 p-5 cursor-pointer"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#2da44e]/10 border border-[#2da44e]/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                      <Map className="w-5 h-5 text-[#2da44e]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-foreground leading-snug">Choose on map</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Tap to pin exact spot</p>
+                    </div>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          {/* Submit */}
           <div className="pt-6 border-t border-border flex justify-end">
             <Button
               onClick={handleSubmit}
@@ -235,6 +340,14 @@ export default function ReportPage() {
           </div>
         </div>
       </div>
+
+      {/* Location picker map dialog */}
+      <LocationPickerPanel
+        isOpen={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+        initialLocation={coordinates ? { lat: coordinates.lat, lng: coordinates.lng } : null}
+        onConfirm={handleMapConfirm}
+      />
     </div>
   )
 }

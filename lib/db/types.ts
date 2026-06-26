@@ -10,6 +10,8 @@ export interface Profile {
   karma_score: number
   ward_id: number | null
   push_subscription: object | null
+  home_location: any | null
+  home_address: string | null
   created_at: string
 }
 

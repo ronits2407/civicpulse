@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
+import withPWAInit from "next-pwa";
+
+const withPWA = withPWAInit({
+  dest: "public",
+  disable: process.env.NODE_ENV === "development",
+  register: true,
+  skipWaiting: true,
+});
 
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  output: "standalone",
+  turbopack: {}, // Silences Turbopack error caused by next-pwa's webpack config injection
 };
 
-export default nextConfig;
+export default withPWA(nextConfig);

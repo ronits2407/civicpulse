@@ -142,7 +142,7 @@ const getAgentState = (currentStage: string | null, targetStage: string, isDupli
     return 'skipped'
   }
 
-  const stages = ['agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'agent4_resolution', 'completed']
+  const stages = ['agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'awaiting_community_review', 'agent4_resolution', 'completed']
   const cleanCurrentStage = currentStage?.replace('_failed', '') || ''
   const currentIndex = currentStage ? stages.indexOf(cleanCurrentStage) : -1
   const targetIndex = stages.indexOf(targetStage)
@@ -203,6 +203,121 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+  const [isSettingLocation, setIsSettingLocation] = useState(false)
+  const [nearbyReviews, setNearbyReviews] = useState<Issue[]>([])
+  const [isFetchingReviews, setIsFetchingReviews] = useState(false)
+  const [voteTally, setVoteTally] = useState<{ confirms: number; denies: number } | null>(null)
+
+  useEffect(() => {
+    if (selectedIssue?.status === 'community_review') {
+      const fetchTally = async () => {
+        try {
+          const supabase = createClient()
+          const { data } = await supabase.from('verifications').select('verdict').eq('issue_id', selectedIssue.id)
+          if (data) {
+            const confirms = data.filter(v => v.verdict).length
+            const denies = data.filter(v => !v.verdict).length
+            setVoteTally({ confirms, denies })
+          }
+        } catch (e) {}
+      }
+      fetchTally()
+    } else {
+      setVoteTally(null)
+    }
+  }, [selectedIssue])
+  
+  const fetchNearbyReviews = async () => {
+    if (!profile?.home_location) return
+    setIsFetchingReviews(true)
+    try {
+      const res = await fetch(`/api/reviews?userId=${user.id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setNearbyReviews(data.issues || [])
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsFetchingReviews(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchNearbyReviews()
+  }, [profile?.home_location])
+
+  const handleVote = async (issueId: string, verdict: boolean) => {
+    const toastId = toast.loading('Submitting your vote...')
+    try {
+      const res = await fetch(`/api/reviews/${issueId}/vote`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, verdict, distanceMeters: 0 })
+      })
+      if (!res.ok) throw new Error('Failed to submit vote')
+      toast.success('Vote submitted successfully!', { id: toastId })
+      setNearbyReviews(prev => prev.filter(i => i.id !== issueId))
+    } catch (error: any) {
+      toast.error(error.message, { id: toastId })
+    }
+  }
+
+  const handleSetHomeLocation = () => {
+    setIsSettingLocation(true)
+    if (!navigator.geolocation) {
+      toast.error('Geolocation is not supported by your browser')
+      setIsSettingLocation(false)
+      return
+    }
+
+    toast.loading('Finding your location...', { id: 'location-toast' })
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const lat = position.coords.latitude
+          const lng = position.coords.longitude
+          
+          // Reverse geocode to get city/state
+          let address = null
+          try {
+            const geoRes = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
+            if (geoRes.ok) {
+              const geoData = await geoRes.json()
+              if (geoData.address) {
+                address = geoData.address
+              }
+            }
+          } catch (e) {
+            console.error('Geocoding failed:', e)
+          }
+
+          const res = await fetch('/api/profile/home-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId: user.id,
+              lat,
+              lng,
+              address
+            }),
+          })
+          if (!res.ok) throw new Error('Failed to save home location')
+          toast.success('Home location saved successfully! Refreshing dashboard...', { id: 'location-toast' })
+          setIsProfileOpen(false)
+          setTimeout(() => window.location.reload(), 1500)
+        } catch (error: any) {
+          toast.error(error.message, { id: 'location-toast' })
+        } finally {
+          setIsSettingLocation(false)
+        }
+      },
+      (error) => {
+        toast.error('Unable to retrieve your location', { id: 'location-toast' })
+        setIsSettingLocation(false)
+      }
+    )
+  }
 
   const departmentMap = useMemo(() => {
     const map: Record<string, string> = {}
@@ -392,7 +507,33 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                         </p>
                       )}
                     </div>
-                    {/* Single Action: Sign Out */}
+                    {/* Action: Set Home Location */}
+                    {profile?.home_address ? (
+                      <div className="px-4 py-2 border-b border-border text-left bg-muted/30">
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Home Location</p>
+                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-[#0969da]" />
+                          {profile.home_address}
+                        </p>
+                        <button
+                          onClick={handleSetHomeLocation}
+                          disabled={isSettingLocation}
+                          className="text-[10px] text-muted-foreground hover:text-foreground mt-1 underline underline-offset-2 disabled:opacity-50"
+                        >
+                          {isSettingLocation ? 'Updating...' : 'Update location'}
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleSetHomeLocation}
+                        disabled={isSettingLocation}
+                        className="w-full text-left px-4 py-2 text-xs text-foreground hover:bg-muted transition-colors flex items-center gap-2 font-medium cursor-pointer disabled:opacity-50 border-b border-border"
+                      >
+                        {isSettingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
+                        Set Home Location
+                      </button>
+                    )}
+                    {/* Action: Sign Out */}
                     <form action={signOut} className="w-full">
                       <button
                         type="submit"
@@ -487,6 +628,60 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
           {/* RIGHT COLUMN: Search, Filters, and Feed */}
           <div className="lg:col-span-2 space-y-6">
+
+            {/* "Your Community Needs You" Section */}
+            {profile?.home_location && nearbyReviews.length > 0 && (
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-4 mb-6 shadow-[0_0_15px_rgba(245,158,11,0.1)] border-amber-500/20">
+                <div className="flex items-center gap-2 mb-2">
+                  <ShieldCheck className="w-5 h-5 text-amber-500" />
+                  <h2 className="text-base font-bold text-foreground">Your Community Needs You</h2>
+                  <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[10px] ml-auto">
+                    {nearbyReviews.length} Pending
+                  </Badge>
+                </div>
+                <div className="space-y-4">
+                  {nearbyReviews.map(review => (
+                    <div key={review.id} className="p-4 rounded-xl bg-background/50 border border-border flex flex-col gap-3">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-semibold text-sm">{review.title}</h4>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{review.description}</p>
+                        </div>
+                        {review.credibility_score !== null && (
+                          <Badge variant="outline" className="bg-background text-[10px]">
+                            AI Score: {review.credibility_score}/10
+                          </Badge>
+                        )}
+                      </div>
+                      {review.reasoning && (
+                        <div className="bg-muted/50 p-2 rounded text-[10px] border border-border">
+                          <span className="font-semibold text-muted-foreground mr-1">AI Note:</span>
+                          <span className="text-muted-foreground">{review.reasoning}</span>
+                        </div>
+                      )}
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          onClick={() => handleVote(review.id, true)} 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-400 border-emerald-500/30"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm
+                        </Button>
+                        <Button 
+                          onClick={() => handleVote(review.id, false)} 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400 border-rose-500/30"
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2" /> Deny
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Feed Controls Header */}
             <div className="bg-card border border-border rounded-2xl p-4 space-y-4">
@@ -944,6 +1139,14 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                       <span className="text-muted-foreground ml-1">Pending</span>
                                     )}
                                   </div>
+                                  {selectedIssue.status === 'community_review' && voteTally && (
+                                    <div className="w-full mt-2">
+                                      <span className="text-muted-foreground font-semibold">Community Tally: </span>
+                                      <span className="text-emerald-400 font-semibold">{voteTally.confirms} Confirms</span>
+                                      <span className="text-muted-foreground mx-1">/</span>
+                                      <span className="text-rose-400 font-semibold">{voteTally.denies} Denies</span>
+                                    </div>
+                                  )}
                                   {selectedIssue.reasoning && (
                                     <div className="w-full mt-1">
                                       <span className="text-muted-foreground font-semibold">AI Reasoning: </span>

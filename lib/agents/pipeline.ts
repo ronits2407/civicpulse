@@ -14,6 +14,7 @@ function shouldContinueAfterDedup(state: AgentState): string {
 
 function shouldContinueAfterValidation(state: AgentState): string {
   if (state.error) return 'end'
+  if (state.validation?.needs_community_verification) return 'end'
   return 'resolve'
 }
 

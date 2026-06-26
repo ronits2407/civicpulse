@@ -73,11 +73,13 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
     const supabase = createServiceClient()
     
     console.log(`[Agent 3: Validator] Advancing pipeline stage and updating credibility score...`);
+    const isCommunityReview = validation.needs_community_verification;
     const { error: updateError } = await supabase.from('issues').update({
       credibility_score: validation.credibility_score,
       needs_community_verification: validation.needs_community_verification,
       reasoning: validation.reasoning,
-      pipeline_stage: 'agent4_resolution'
+      status: isCommunityReview ? 'community_review' : undefined,
+      pipeline_stage: isCommunityReview ? 'awaiting_community_review' : 'agent4_resolution'
     }).eq('id', state.reportId)
 
     if (updateError) {

@@ -20,11 +20,16 @@ export default async function DashboardPage() {
     .order('created_at', { ascending: false })
     .limit(20)
 
+  const { data: departments } = await supabase
+    .from('departments')
+    .select('*')
+
   return (
     <DashboardClient
       user={user}
       profile={profile}
       initialIssues={issues || []}
+      departments={departments || []}
     />
   )
 }

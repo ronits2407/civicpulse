@@ -7,7 +7,7 @@ import { signOut } from '@/lib/auth/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Issue, Profile } from '@/lib/db/types'
+import { Issue, Profile, Department } from '@/lib/db/types'
 import {
   Plus,
   LogOut,
@@ -191,9 +191,10 @@ interface Props {
   user: any
   profile: Profile | null
   initialIssues: Issue[]
+  departments: Department[]
 }
 
-export function DashboardClient({ user, profile, initialIssues }: Props) {
+export function DashboardClient({ user, profile, initialIssues, departments }: Props) {
   const router = useRouter()
   const [issues, setIssues] = useState<Issue[]>(initialIssues)
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
@@ -202,6 +203,14 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+
+  const departmentMap = useMemo(() => {
+    const map: Record<string, string> = {}
+    departments.forEach(d => {
+      map[d.id] = d.name
+    })
+    return map
+  }, [departments])
 
   const handleRetry = async (issueId: string) => {
     setIsRetrying(true)
@@ -344,8 +353,14 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                 aria-label="User menu"
               >
                 <Avatar className="w-9 h-9 ring-2 ring-slate-900 shadow-inner hover:ring-4 hover:ring-slate-700/50 hover:shadow-[0_0_12px_rgba(148,163,184,0.25)] hover:scale-105 transition-all duration-200">
+                  {(user.user_metadata?.avatar_url || user.user_metadata?.picture) && (
+                    <AvatarImage
+                      src={user.user_metadata.avatar_url || user.user_metadata.picture}
+                      alt={user.user_metadata.full_name || 'User Avatar'}
+                    />
+                  )}
                   <AvatarFallback className="bg-muted text-foreground text-xs font-semibold">
-                    {user.email?.[0]?.toUpperCase() || 'U'}
+                    {user.user_metadata?.full_name?.[0]?.toUpperCase() || user.email?.[0]?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
               </button>
@@ -362,11 +377,13 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                     {/* User info header in dropdown (GitHub style) */}
                     <div className="px-4 py-2 border-b border-border text-left">
                       <p className="text-xs font-semibold text-foreground truncate">
-                        {user.email || 'Citizen'}
+                        {user.user_metadata?.full_name || user.user_metadata?.name || user.email || 'Citizen'}
                       </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">
-                        Verified Reporter
-                      </p>
+                      {(user.user_metadata?.full_name || user.user_metadata?.name) && (
+                        <p className="text-[10px] text-muted-foreground truncate mt-0.5">
+                          {user.email}
+                        </p>
+                      )}
                     </div>
                     {/* Single Action: Sign Out */}
                     <form action={signOut} className="w-full">
@@ -764,7 +781,7 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                         <span className="text-[10px] text-muted-foreground font-semibold">Assigned Department</span>
                         <p className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-1">
                           <Building className="w-4 h-4 text-indigo-400" />
-                          {selectedIssue.department_id ? `Department ID: ${selectedIssue.department_id}` : 'Municipal Processing Queue'}
+                          {selectedIssue.department_id ? (departmentMap[selectedIssue.department_id] || `Department ID: ${selectedIssue.department_id}`) : 'Municipal Processing Queue'}
                         </p>
                       </div>
 

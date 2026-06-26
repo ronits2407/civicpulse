@@ -48,19 +48,17 @@ async function resetDatabase() {
     }
   }
 
-  // 2. Clear Auth Users (this usually cascades to `profiles`)
-  console.log(`\nClearing all authentication users...`)
-  const { data: users, error: listError } = await supabase.auth.admin.listUsers()
-  if (listError) {
-    console.error(`❌ Failed to list users:`, listError.message)
-  } else if (users && users.users) {
-    for (const user of users.users) {
-      const { error: deleteError } = await supabase.auth.admin.deleteUser(user.id)
-      if (deleteError) {
-        console.error(`❌ Failed to delete user ${user.email}:`, deleteError.message)
-      }
-    }
-    console.log(`✅ Deleted ${users.users.length} users.`)
+  // 2. Reset karma scores in profiles table (since karma_events are cleared)
+  console.log(`\nResetting karma scores in profiles...`)
+  const { error: profileError } = await supabase
+    .from('profiles')
+    .update({ karma_score: 0 })
+    .not('id', 'is', null)
+
+  if (profileError) {
+    console.error(`❌ Failed to reset profiles:`, profileError.message)
+  } else {
+    console.log(`✅ Reset all profile karma scores to 0`)
   }
 
   // 3. Clear the issue-media storage bucket

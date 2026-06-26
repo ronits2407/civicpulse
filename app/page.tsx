@@ -18,12 +18,12 @@ export default async function HomePage() {
       <div className="flex gap-4">
         <Link href="/auth/login">
           <Button className="bg-[#2da44e] hover:bg-[#2c974b] text-white border border-[#2da44e] px-8 h-10 font-semibold shadow-sm">
-            Get Started
+            Citizen
           </Button>
         </Link>
         <Link href="/admin/login">
           <Button variant="outline" className="text-foreground hover:bg-accent border-border px-8 h-10 font-semibold shadow-sm">
-            Admin Login
+            Municipal
           </Button>
         </Link>
       </div>

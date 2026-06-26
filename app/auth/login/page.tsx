@@ -29,7 +29,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -38,7 +38,7 @@ export default function LoginPage() {
       >
         <div className="text-center mb-6">
           {/* GitHub logo placeholder or simple text */}
-          <h1 className="text-2xl font-semibold text-foreground mb-1 tracking-tight">Sign in to CivicPulse</h1>
+          <h1 className="text-2xl font-semibold text-foreground mb-1 tracking-tight">Get started with CivicPulse</h1>
         </div>
 
         <Card className="bg-card border-border shadow-sm">
@@ -69,7 +69,7 @@ export default function LoginPage() {
                     className="w-full bg-[#2da44e] hover:bg-[#2c974b] text-white font-semibold shadow-sm border border-[#2da44e]"
                     disabled={loading}
                   >
-                    {loading ? 'Sending...' : 'Sign in'}
+                    {loading ? 'Sending...' : 'Continue'}
                   </Button>
                 </form>
 
@@ -101,12 +101,6 @@ export default function LoginPage() {
             )}
           </CardContent>
         </Card>
-        
-        <div className="mt-4 text-center">
-          <p className="text-xs text-muted-foreground border border-transparent hover:border-border p-4 rounded-md transition-colors">
-            New to CivicPulse? <span className="text-[#0969da] cursor-pointer hover:underline">Create an account.</span>
-          </p>
-        </div>
       </motion.div>
     </div>
   )

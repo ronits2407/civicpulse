@@ -128,3 +128,45 @@
     @apply font-sans;
   }
 }
+
+/* Custom Sonner Toast Styles */
+.cn-toast {
+  position: relative !important;
+  overflow: hidden !important;
+  border: 1px solid var(--border) !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+  padding-bottom: 12px !important; /* spacing for progress bar */
+}
+
+.dark .cn-toast {
+  background-color: #21262d !important; /* brighter dark background */
+  border-color: #30363d !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Loading/Progress bar at the bottom border */
+.cn-toast::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  width: 100%;
+  background-color: var(--primary) !important;
+  transform-origin: left;
+  animation: toast-progress 4000ms linear forwards;
+}
+
+.cn-toast:hover::after {
+  animation-play-state: paused;
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}

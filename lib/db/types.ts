@@ -23,6 +23,7 @@ export interface Issue {
   severity: number
   is_emergency: boolean
   status: IssueStatus
+  pipeline_stage: string | null
   location: { lat: number; lng: number }
   address: string
   ward_id: number | null

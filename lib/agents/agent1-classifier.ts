@@ -28,37 +28,58 @@ Describe: what the problem is, visible severity, approximate location type (road
 any safety hazards visible. Be concise, under 100 words.`
 
 export async function runClassifierAgent(state: AgentState): Promise<AgentState> {
+  console.log('[Agent 1: Classifier] Starting classification for issue:', state.issueId || 'new issue');
   try {
     let imageAnalysis = ''
 
     if (state.imageUrl) {
+      console.log('[Agent 1: Classifier] Image URL provided, starting image analysis...');
       imageAnalysis = await analyzeImage(state.imageUrl, IMAGE_ANALYSIS_PROMPT)
+      console.log('[Agent 1: Classifier] Image analysis complete:', imageAnalysis);
     }
 
+    console.log('[Agent 1: Classifier] Requesting structured JSON classification from LLM...');
     const classification = await generateStructuredJSON<ClassificationResult>(
       CLASSIFIER_PROMPT(state.rawText, imageAnalysis),
       CLASSIFIER_SYSTEM
     )
+    console.log('[Agent 1: Classifier] Classification received:', classification);
 
     const supabase = createServiceClient()
-    const { data: departments } = await supabase
+    const { data: departments, error: deptError } = await supabase
       .from('departments')
       .select('id, name, category_scope')
 
-    if (departments) {
+    if (deptError) {
+      console.error('[Agent 1: Classifier] Error fetching departments:', deptError);
+    } else if (departments) {
       const matchingDept = departments.find((d: any) =>
         d.category_scope?.includes(classification.category)
       )
       if (matchingDept) {
+        console.log('[Agent 1: Classifier] Matched department:', matchingDept.name);
         classification.department_id = matchingDept.id
+      } else {
+        console.warn('[Agent 1: Classifier] No matching department found for category:', classification.category);
       }
     }
+
+    console.log('[Agent 1: Classifier] Completed successfully. Updating DB...');
+    await supabase.from('issues').update({
+      title: classification.suggested_title,
+      category: classification.category,
+      subcategory: classification.subcategory,
+      severity: classification.severity,
+      is_emergency: classification.is_emergency,
+      pipeline_stage: 'agent2_deduplication'
+    }).eq('id', state.reportId)
 
     return {
       ...state,
       classification,
     }
   } catch (error: any) {
+    console.error('[Agent 1: Classifier] Fatal error during classification:', error);
     return {
       ...state,
       error: `Classifier agent failed: ${error.message}`,

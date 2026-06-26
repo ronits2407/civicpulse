@@ -52,10 +52,9 @@ export function getGeminiProModel(): GenerativeModel {
 let _ollamaClient: OpenAI | null = null
 function getOllamaClient(): OpenAI {
   if (!_ollamaClient) {
-    if (!process.env.OLLAMA_API_KEY) throw new Error('OLLAMA_API_KEY is not set')
     _ollamaClient = new OpenAI({
-      baseURL: process.env.OLLAMA_BASE_URL || 'https://ollama.com/v1',
-      apiKey: process.env.OLLAMA_API_KEY,
+      baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+      apiKey: process.env.OLLAMA_API_KEY || 'ollama', // local ollama doesn't require a real API key
     })
   }
   return _ollamaClient

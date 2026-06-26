@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/db/server'
 import { createIssuePipeline } from '@/lib/agents/pipeline'
 import { generateEmbedding } from '@/lib/gemini/client'
@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
         address: coordinates.address || '',
         status: 'open',
         embedding,
+        pipeline_stage: 'agent1_classifier'
       })
       .select()
       .single()
@@ -51,17 +52,17 @@ export async function POST(req: NextRequest) {
       error: null,
     }
 
-    const finalState = (await pipeline.invoke(initialState)) as unknown as AgentState
+    // Run asynchronously in the background using Next.js after()
+    after(() => {
+      pipeline.invoke(initialState).catch(async (err) => {
+        console.error('Pipeline Background Error:', err)
+        await supabase.from('issues').update({ pipeline_stage: 'failed', error: err.message }).eq('id', issue.id)
+      })
+    })
 
     return NextResponse.json({
       success: true,
       issueId: issue.id,
-      isDuplicate: finalState.deduplication?.is_duplicate || false,
-      classification: finalState.classification,
-      credibilityScore: finalState.validation?.credibility_score,
-      needsVerification: finalState.validation?.needs_community_verification,
-      slaDeadline: finalState.resolution?.sla_deadline,
-      error: finalState.error,
     })
   } catch (error: any) {
     return NextResponse.json(

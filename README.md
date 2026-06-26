@@ -1,6 +1,6 @@
 # CivicPulse
 
-CivicPulse is an AI-powered civic issue reporting and management platform designed for Nashik, India. The platform enables citizens to submit reports about municipal issues, which are then processed, classified, validated, routed, and summarized by a multi-agent system built using LangGraph and Google's Gemini models.
+CivicPulse is an AI-powered civic issue reporting and management platform. The platform enables citizens to submit reports about municipal issues, which are then processed, classified, validated, routed, and summarized by a multi-agent system built using LangGraph and Google's Gemini models.
 
 ---
 

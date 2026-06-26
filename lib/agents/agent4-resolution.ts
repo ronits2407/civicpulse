@@ -36,14 +36,7 @@ Historical context: ${history}
 
 Return JSON with exactly these fields:
 {
-  "civic_brief": a 150-200 word professional brief in this format:
-    "ISSUE SUMMARY: [what was reported]
-     LOCATION: [address]
-     EVIDENCE: [description of evidence available]
-     URGENCY: [why this needs attention now]
-     HISTORICAL CONTEXT: [past issues at this location if any]
-     RECOMMENDED ACTION: [specific action for the civic department]
-     PRIORITY: [High/Medium/Low]",
+  "civic_brief": "A single continuous string (150-200 words) containing the professional brief. Use standard text with newline characters (\\n) if needed, but DO NOT output a nested JSON object. Include Issue Summary, Location, Evidence, Urgency, Historical Context, Recommended Action, and Priority.",
   "sla_hours": integer hours to resolve,
   "sla_deadline": ISO timestamp string for deadline,
   "department_id": "${classification.department_id || 'unassigned'}"
@@ -51,8 +44,11 @@ Return JSON with exactly these fields:
 `
 
 export async function runResolutionAgent(state: AgentState): Promise<AgentState> {
+  console.log(`[Agent 4: Resolution Planner] Starting resolution planning for issue: ${state.issueId || state.reportId || 'unknown'}`);
   try {
     const supabase = createServiceClient()
+
+    console.log(`[Agent 4: Resolution Planner] Fetching historical issues at this location...`);
 
     const { data: historicalIssues } = await supabase
       .from('issues')
@@ -64,12 +60,15 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
 
     let historyContext = 'No previous issues at this location.'
     if (historicalIssues && historicalIssues.length > 0) {
+      console.log(`[Agent 4: Resolution Planner] Found ${historicalIssues.length} historical issues.`);
       historyContext = historicalIssues
         .map(
           (i: any) =>
             `${i.title} (${i.status}, reported ${new Date(i.created_at).toLocaleDateString()})`
         )
         .join('; ')
+    } else {
+      console.log(`[Agent 4: Resolution Planner] No historical issues found.`);
     }
 
     const slaHours = getSLAHours(
@@ -80,6 +79,9 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     const slaDeadline = new Date(
       Date.now() + slaHours * 60 * 60 * 1000
     ).toISOString()
+
+    console.log(`[Agent 4: Resolution Planner] Calculated SLA: ${slaHours} hours (Deadline: ${slaDeadline})`);
+    console.log(`[Agent 4: Resolution Planner] Requesting civic brief generation from LLM...`);
 
     const resolution = await generateStructuredJSON<ResolutionResult>(
       BRIEF_PROMPT(
@@ -94,11 +96,23 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     resolution.sla_hours = slaHours
     resolution.sla_deadline = slaDeadline
 
+    console.log(`[Agent 4: Resolution Planner] Resolution brief generated successfully.`);
+    console.log(`[Agent 4: Resolution Planner] Updating issue with department ID, civic brief, and completing pipeline stage...`);
+
+    await supabase.from('issues').update({
+      department_id: resolution.department_id,
+      civic_brief: resolution.civic_brief,
+      sla_deadline: resolution.sla_deadline,
+      pipeline_stage: 'completed'
+    }).eq('id', state.reportId)
+
+    console.log(`[Agent 4: Resolution Planner] Completed successfully.`);
     return {
       ...state,
       resolution,
     }
   } catch (error: any) {
+    console.error(`[Agent 4: Resolution Planner] Fatal error during resolution planning:`, error);
     return {
       ...state,
       error: `Resolution agent failed: ${error.message}`,

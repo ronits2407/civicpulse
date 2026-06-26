@@ -22,7 +22,6 @@ import {
   Star,
   MapPin,
   Clock,
-  Search,
   ChevronRight,
   CheckCircle2,
   Clock3,
@@ -45,7 +44,8 @@ import {
   Activity,
   CheckSquare,
   Info,
-  FileText
+  FileText,
+  Loader2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -129,10 +129,43 @@ const STATUS_DETAILS: Record<string, { label: string; bgClass: string; borderCla
 }
 
 function getKarmaLevel(score: number) {
-  if (score >= 300) return { name: 'Nashik Ambassador', level: 4, min: 300, max: 1000, next: 'Max Level' }
-  if (score >= 150) return { name: 'Civic Champion', level: 3, min: 150, max: 300, next: 'Nashik Ambassador' }
+  if (score >= 300) return { name: 'Civic Ambassador', level: 4, min: 300, max: 1000, next: 'Max Level' }
+  if (score >= 150) return { name: 'Civic Champion', level: 3, min: 150, max: 300, next: 'Civic Ambassador' }
   if (score >= 50) return { name: 'Civic Guardian', level: 2, min: 50, max: 150, next: 'Civic Champion' }
   return { name: 'Civic Observer', level: 1, min: 0, max: 50, next: 'Civic Guardian' }
+}
+
+export type PipelineState = 'done' | 'in_progress' | 'pending' | 'failed'
+
+const getAgentState = (currentStage: string | null, targetStage: string): PipelineState => {
+  const stages = ['agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'agent4_resolution', 'completed', 'failed']
+  const currentIndex = currentStage ? stages.indexOf(currentStage) : -1
+  const targetIndex = stages.indexOf(targetStage)
+
+  if (currentStage === 'failed') return 'failed'
+  if (currentIndex > targetIndex || currentStage === 'completed') return 'done'
+  if (currentIndex === targetIndex) return 'in_progress'
+  return 'pending'
+}
+
+const AgentDot = ({ state }: { state: PipelineState }) => {
+  if (state === 'done') return <div className="absolute -left-[33px] top-0.5 bg-[#2da44e] border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-emerald-500/30" />
+  if (state === 'in_progress') return <div className="absolute -left-[33px] top-0.5 bg-amber-400 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-amber-500/30 animate-pulse" />
+  if (state === 'failed') return <div className="absolute -left-[33px] top-0.5 bg-rose-500 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-rose-500/30" />
+  return <div className="absolute -left-[33px] top-0.5 bg-slate-800 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md opacity-40" />
+}
+
+const AgentStatusBadge = ({ state }: { state: PipelineState }) => {
+  if (state === 'failed') {
+    return <span className="text-[9px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.2 rounded border border-rose-500/20 uppercase tracking-wide leading-none">FAILED</span>
+  }
+  if (state === 'done') {
+    return <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
+  }
+  if (state === 'in_progress') {
+    return <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-1.5 py-0.2 rounded border border-amber-500/20 uppercase tracking-wide flex items-center gap-1"><Loader2 className="w-2.5 h-2.5 animate-spin" /> IN PROGRESS</span>
+  }
+  return <span className="text-[9px] font-bold text-muted-foreground bg-muted px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">PENDING</span>
 }
 
 interface Props {
@@ -147,10 +180,9 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
   
   // Search & Filter State
-  const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all') // 'all', 'active', 'resolved'
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
-  const [sortBy, setSortBy] = useState<'newest' | 'severity'>('newest')
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -204,13 +236,6 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
   const filteredIssues = useMemo(() => {
     return issues
       .filter(issue => {
-        // Search text matching
-        const matchesSearch =
-          (issue.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (issue.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (issue.address || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-          issue.category.toLowerCase().includes(searchQuery.toLowerCase())
-
         // Status matching
         let matchesStatus = true
         if (statusFilter === 'active') {
@@ -222,16 +247,12 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
         // Category matching
         const matchesCategory = categoryFilter === 'all' || issue.category === categoryFilter
 
-        return matchesSearch && matchesStatus && matchesCategory
+        return matchesStatus && matchesCategory
       })
       .sort((a, b) => {
-        if (sortBy === 'newest') {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        } else {
-          return (b.severity || 0) - (a.severity || 0)
-        }
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
-  }, [issues, searchQuery, statusFilter, categoryFilter, sortBy])
+  }, [issues, statusFilter, categoryFilter])
 
   // Karma Level Computations
   const karmaScore = profile?.karma_score || 0
@@ -262,59 +283,67 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-blue-500/30 selection:text-blue-200">
       {/* Top Navigation */}
       <nav className="sticky top-0 z-40 bg-background border-b border-border transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div>
-                <span className="text-base font-bold tracking-tight text-foreground block leading-none">
-                  CivicPulse
-                </span>
-                <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase block mt-1">
-                  Nashik City Portal
-                </span>
-              </div>
+            {/* Left side empty placeholder to balance flex layout */}
+            <div className="flex-1"></div>
+
+            {/* Centered Logo / Title */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none select-none">
+              <span className="text-base font-bold tracking-tight text-foreground block leading-none">
+                CivicPulse
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground tracking-wider uppercase block mt-1">
+                Citizen Portal
+              </span>
             </div>
 
-            {/* Realtime & User Profile */}
-            <div className="flex items-center gap-4">
-              <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 rounded-full bg-card/60 border border-border/80">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                </span>
-                <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                  Live Sync Active
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3 pl-3 border-l border-border">
-                <Avatar className="w-8 h-8 ring-2 ring-slate-900 shadow-inner">
+            {/* Right side: User Profile Icon with GitHub-style dropdown */}
+            <div className="flex-1 flex justify-end relative">
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-2 focus:outline-none cursor-pointer"
+                type="button"
+                aria-label="User menu"
+              >
+                <Avatar className="w-9 h-9 ring-2 ring-slate-900 shadow-inner hover:ring-4 hover:ring-slate-700/50 hover:shadow-[0_0_12px_rgba(148,163,184,0.25)] hover:scale-105 transition-all duration-200">
                   <AvatarFallback className="bg-muted text-foreground text-xs font-semibold">
                     {user.email?.[0]?.toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <div className="hidden md:block text-left">
-                  <p className="text-xs font-semibold text-foreground leading-none">
-                    {user.email?.split('@')[0] || 'Citizen'}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
-                    Verified Reporter
-                  </p>
-                </div>
+              </button>
 
-                <form action={signOut} className="ml-1">
-                  <Button
-                    type="submit"
-                    variant="ghost"
-                    size="icon-sm"
-                    className="text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors h-8 w-8"
-                    title="Sign Out"
-                  >
-                    <LogOut className="w-4 h-4" />
-                  </Button>
-                </form>
-              </div>
+              {/* Dropdown Card */}
+              {isProfileOpen && (
+                <>
+                  {/* Backdrop overlay to close the dropdown when clicking outside */}
+                  <div
+                    className="fixed inset-0 z-40 cursor-default"
+                    onClick={() => setIsProfileOpen(false)}
+                  />
+                  <div className="absolute right-0 top-full mt-2 w-48 rounded-md shadow-lg bg-card border border-border z-50 py-1 origin-top-right focus:outline-none">
+                    {/* User info header in dropdown (GitHub style) */}
+                    <div className="px-4 py-2 border-b border-border text-left">
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {user.email || 'Citizen'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Verified Reporter
+                      </p>
+                    </div>
+                    {/* Single Action: Sign Out */}
+                    <form action={signOut} className="w-full">
+                      <button
+                        type="submit"
+                        className="w-full text-left px-4 py-2 text-xs text-rose-400 hover:bg-rose-500/10 transition-colors flex items-center gap-2 font-medium cursor-pointer"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        Sign Out
+                      </button>
+                    </form>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -327,70 +356,6 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
           {/* LEFT COLUMN: Profile & Action & Stats */}
           <div className="lg:col-span-1 space-y-6">
             
-            {/* Gamified Karma Card */}
-            <Card className="bg-card border-border relative overflow-hidden group">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10px] font-bold text-[#0969da] tracking-wider uppercase">
-                      Citizen Civic Profile
-                    </span>
-                    <h2 className="text-lg font-bold text-foreground mt-1">
-                      {user.email?.split('@')[0] || 'Citizen'}
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-1 bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-lg border border-amber-500/20 shadow-sm shadow-amber-500/5">
-                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                    <span className="text-xs font-bold">{karmaScore} Karma</span>
-                  </div>
-                </div>
-
-                {/* Level Display */}
-                <div className="mt-6">
-                  <div className="flex justify-between items-end mb-2">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Current Rank</p>
-                      <p className="text-sm font-bold text-foreground flex items-center gap-1.5 mt-0.5">
-                        <Award className="w-4 h-4 text-[#0969da]" />
-                        {karmaLvl.name}
-                        <span className="text-xs text-muted-foreground font-normal">Level {karmaLvl.level}</span>
-                      </p>
-                    </div>
-                    {karmaLvl.level < 4 && (
-                      <p className="text-[10px] text-muted-foreground font-medium">
-                        {karmaToNext} points to Level {karmaLvl.level + 1}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Progress Bar */}
-                  <div className="w-full bg-background rounded-full h-2.5 p-0.5 border border-border shadow-inner">
-                    <div
-                      className="bg-[#2da44e] h-1.5 rounded-full transition-all duration-500"
-                      style={{ width: `${karmaProgress}%` }}
-                    />
-                  </div>
-                  
-                  {karmaLvl.level < 4 ? (
-                    <div className="flex justify-between text-[9px] text-muted-foreground mt-2 font-medium">
-                      <span>{karmaLvl.min} Karma</span>
-                      <span>Next Rank: {karmaLvl.next} ({karmaLvl.max} Karma)</span>
-                    </div>
-                  ) : (
-                    <p className="text-[9px] text-emerald-400 mt-2 font-semibold flex items-center gap-1">
-                      <Sparkles className="w-2.5 h-2.5" /> Max Rank Achieved! You are a Nashik Ambassador.
-                    </p>
-                  )}
-                </div>
-
-                <div className="border-t border-border/60 mt-6 pt-4 text-[11px] text-muted-foreground/90 leading-relaxed flex items-start gap-2">
-                  <Info className="w-3.5 h-3.5 text-[#0969da] shrink-0 mt-0.5" />
-                  <span>
-                    Earn points by reporting civic issues or assisting city officials with community verifications.
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* Quick Actions (Large Primary Button) */}
             <Button
@@ -455,22 +420,6 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                 ))}
               </div>
 
-              {/* Resolution Rate Card */}
-              <Card className="bg-card border-border p-4">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Resolution Efficiency</span>
-                  <span className="text-xs font-bold text-emerald-400">{resolutionRate}%</span>
-                </div>
-                <div className="w-full bg-background rounded-full h-1.5 p-0.5 border border-border/60 shadow-inner">
-                  <div
-                    className="bg-emerald-500 h-0.5 rounded-full transition-all duration-500"
-                    style={{ width: `${resolutionRate}%` }}
-                  />
-                </div>
-                <p className="text-[9px] text-muted-foreground mt-2">
-                  Ratio of reported issues successfully resolved by municipal routing.
-                </p>
-              </Card>
             </div>
 
           </div>
@@ -488,52 +437,13 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                       {filteredIssues.length}
                     </Badge>
                   </h2>
-                  <p className="text-[11px] text-muted-foreground">
-                    Track the real-time AI classification, deduplication, and resolution routing.
-                  </p>
-                </div>
-
-                {/* Sort Control */}
-                <div className="flex items-center gap-1.5 bg-background/60 p-0.5 rounded-lg border border-border/80 self-end sm:self-auto">
-                  <button
-                    onClick={() => setSortBy('newest')}
-                    className={`text-[10px] font-medium px-2.5 py-1 rounded-md transition-all ${
-                      sortBy === 'newest'
-                        ? 'bg-card text-foreground font-semibold'
-                        : 'text-muted-foreground hover:text-muted-foreground'
-                    }`}
-                  >
-                    Newest
-                  </button>
-                  <button
-                    onClick={() => setSortBy('severity')}
-                    className={`text-[10px] font-medium px-2.5 py-1 rounded-md transition-all ${
-                      sortBy === 'severity'
-                        ? 'bg-card text-rose-400 font-semibold'
-                        : 'text-muted-foreground hover:text-muted-foreground'
-                    }`}
-                  >
-                    Priority
-                  </button>
                 </div>
               </div>
 
-              {/* Search and Status Segment Tabs */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
-                {/* Search Bar */}
-                <div className="relative md:col-span-6">
-                  <Search className="absolute left-3 top-2.5 w-4 h-4 text-muted-foreground" />
-                  <input
-                    type="text"
-                    placeholder="Search by title, category, address..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-background/60 border border-border/80 rounded-xl text-xs text-foreground placeholder-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all shadow-inner"
-                  />
-                </div>
-
+              {/* Status Segment Tabs */}
+              <div className="w-full">
                 {/* Status Segment Control */}
-                <div className="flex bg-background/60 p-1 rounded-xl border border-border/80 md:col-span-6 items-center">
+                <div className="flex bg-background/60 p-1 rounded-xl border border-border/80 items-center">
                   {[
                     { id: 'all', label: 'All Reports' },
                     { id: 'active', label: 'Active Only' },
@@ -575,7 +485,7 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                       onClick={() => setCategoryFilter(key)}
                       className={`flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${
                         isActive
-                          ? `bg-card ${value.color} ${value.borderColor} border-opacity-60 font-bold shadow-md shadow-slate-950/50`
+                          ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
                           : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
                       }`}
                     >
@@ -605,15 +515,14 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                         </div>
                         <h4 className="text-sm font-semibold text-muted-foreground">No matching reports</h4>
                         <p className="text-[11px] text-muted-foreground max-w-xs mt-1 leading-relaxed">
-                          {searchQuery || categoryFilter !== 'all' || statusFilter !== 'all'
+                          {categoryFilter !== 'all' || statusFilter !== 'all'
                             ? "We couldn't find any reports matching your current filter configuration."
-                            : "You haven't submitted any civic issues yet. Report one to help improve Nashik."}
+                            : "You haven't submitted any civic issues yet. Report one to help improve your city."}
                         </p>
-                        {(searchQuery || categoryFilter !== 'all' || statusFilter !== 'all') ? (
+                        {(categoryFilter !== 'all' || statusFilter !== 'all') ? (
                           <Button
                             variant="ghost"
                             onClick={() => {
-                              setSearchQuery('')
                               setCategoryFilter('all')
                               setStatusFilter('all')
                             }}
@@ -669,10 +578,18 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
 
                           <CardContent className="p-4 flex items-center justify-between gap-4">
                             <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                              {/* Category Circle Icon */}
-                              <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-inner ${cat.bgColor} ${cat.borderColor}`}>
-                                <CatIcon className={`w-5 h-5 ${cat.color}`} />
-                              </div>
+                              {/* Category Circle Icon or Uploaded Image */}
+                              {issue.photo_url ? (
+                                <img
+                                  src={issue.photo_url}
+                                  alt={issue.title || 'Issue'}
+                                  className="w-10 h-10 rounded-xl object-cover border border-border shadow-inner shrink-0"
+                                />
+                              ) : (
+                                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-inner ${cat.bgColor} ${cat.borderColor}`}>
+                                  <CatIcon className={`w-5 h-5 ${cat.color}`} />
+                                </div>
+                              )}
 
                               {/* Title, Address, Date */}
                               <div className="min-w-0 flex-1">
@@ -754,304 +671,302 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
           const slaDays = getSlaDaysRemaining(selectedIssue.sla_deadline)
 
           return (
-            <DialogContent className="bg-background border-border text-foreground max-w-2xl overflow-y-auto max-h-[85vh] p-0 rounded-2xl shadow-2xl">
-              {/* Modal Banner Image / Category Header */}
-              {selectedIssue.photo_url ? (
-                <div className="relative w-full h-48 sm:h-56 overflow-hidden bg-card border-b border-border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={selectedIssue.photo_url}
-                    alt={selectedIssue.title || 'Reported Issue Media'}
-                    className="w-full h-full object-cover opacity-85 hover:scale-102 transition-transform duration-300"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 to-transparent" />
-                  
-                  {/* Floating Action receipt */}
-                  <Badge variant="outline" className="absolute top-4 left-4 bg-background/70 border-border text-muted-foreground text-[9px]">
-                    Civic Media Capture
-                  </Badge>
-                </div>
-              ) : (
-                <div className={`w-full h-24 border-b border-border bg-card relative overflow-hidden`}>
-                  <div className="absolute inset-0 flex items-center px-6 gap-3">
-                    <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${cat.bgColor} ${cat.borderColor}`}>
-                      <CatIcon className={`w-5 h-5 ${cat.color}`} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">No Image Attached</span>
-                      <p className="text-xs text-muted-foreground">Locally cataloged by Nashik Civic Services</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Scrollable Body Content */}
-              <div className="p-6 space-y-6">
+            <DialogContent className="bg-background border-border text-foreground w-[95vw] max-w-5xl sm:max-w-5xl overflow-y-auto max-h-[85vh] p-0 rounded-2xl shadow-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+              <div className="p-8">
                 
-                {/* Header Information */}
-                <div>
-                  <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                    <Badge variant="outline" className={`bg-card text-xs px-2.5 py-0.5 capitalize font-semibold shadow-sm ${cat.color} ${cat.borderColor}`}>
-                      <CatIcon className="w-3.5 h-3.5 mr-1" />
-                      {cat.label}
-                    </Badge>
-                    <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-full border shadow-sm ${status.bgClass} ${status.borderClass} ${status.textClass}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
-                      {status.label}
-                    </span>
-                    {selectedIssue.is_emergency && (
-                      <span className="bg-rose-950/30 border border-rose-900/30 text-rose-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> Emergency
-                      </span>
-                    )}
-                  </div>
-
-                  <DialogTitle className="text-base font-bold text-foreground leading-snug">
-                    {selectedIssue.title || 'Civic Issue'}
-                  </DialogTitle>
-
-                  <p className="text-xs text-muted-foreground leading-relaxed mt-2.5 whitespace-pre-line">
-                    {selectedIssue.description}
-                  </p>
-
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-4 pt-4 border-t border-border/60">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                      <div className="text-xs">
-                        <p className="font-semibold text-muted-foreground">Location</p>
-                        <p className="text-muted-foreground text-[11px] truncate max-w-[280px] sm:max-w-[380px]" title={selectedIssue.address}>
-                          {selectedIssue.address || 'Address recorded'}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${selectedIssue.location.lat},${selectedIssue.location.lng}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[10px] text-[#0969da] hover:text-blue-300 hover:underline shrink-0 bg-blue-500/5 hover:bg-blue-500/10 px-2.5 py-1 rounded-lg border border-blue-900/30 transition-all self-start sm:self-auto"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      Open Google Maps
-                    </a>
-                  </div>
-                </div>
-
-                {/* Routing & SLA Section */}
-                <div className="bg-card/50 border border-border rounded-xl p-4 space-y-4">
-                  <h4 className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none">
-                    <Building className="w-3.5 h-3.5 text-muted-foreground" /> Administrative Routing Details
-                  </h4>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] text-muted-foreground font-semibold">Assigned Department</span>
-                      <p className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-0.5">
-                        <Building className="w-4 h-4 text-indigo-400" />
-                        {selectedIssue.department_id ? `Department ID: ${selectedIssue.department_id}` : 'Municipal Processing Queue'}
-                      </p>
-                    </div>
-
-                    <div className="space-y-0.5">
-                      <span className="text-[10px] text-muted-foreground font-semibold">SLA Resolution Target</span>
-                      {selectedIssue.status === 'resolved' ? (
-                        <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-0.5">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                          Resolved
-                        </p>
-                      ) : selectedIssue.sla_deadline ? (
-                        <div className="mt-0.5">
-                          <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <Calendar className="w-4 h-4 text-amber-400" />
-                            {new Date(selectedIssue.sla_deadline).toLocaleDateString('en-IN', {
-                              day: 'numeric', month: 'short', year: 'numeric'
-                            })}
-                          </p>
-                          {slaDays !== null && (
-                            <p className={`text-[9px] font-semibold mt-1 ${
-                              slaDays < 0 ? 'text-rose-400' : 'text-amber-400'
-                            }`}>
-                              {slaDays < 0 ? `Overdue by ${Math.abs(slaDays)} days` : slaDays === 0 ? 'Due today' : `${slaDays} days remaining`}
-                            </p>
-                          )}
-                        </div>
+                {/* Header Information (Top Row) */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
+                  <div className="flex items-center gap-4">
+                    {/* Icon or Image */}
+                    <div className={`w-14 h-14 rounded-2xl border flex shrink-0 items-center justify-center shadow-inner overflow-hidden ${cat.bgColor} ${cat.borderColor}`}>
+                      {selectedIssue.photo_url ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={selectedIssue.photo_url} alt="Issue" className="w-full h-full object-cover" />
+                        </>
                       ) : (
-                        <p className="text-xs text-muted-foreground italic mt-0.5">Pending SLA Assignment</p>
+                        <CatIcon className={`w-7 h-7 ${cat.color}`} />
                       )}
                     </div>
-                  </div>
-                </div>
-
-                {/* AI Processing Trace (Stepper / Timeline) */}
-                <div className="space-y-4">
-                  <h4 className="text-[10px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none pl-1">
-                    <Cpu className="w-3.5 h-3.5 text-muted-foreground" /> AI Agent Pipeline Processing Trace
-                  </h4>
-
-                  <div className="relative pl-6 border-l border-border/80 space-y-6">
-                    
-                    {/* AGENT 1: CLASSIFIER */}
-                    <div className="relative">
-                      <div className="absolute -left-[31px] top-0.5 bg-[#2da44e] border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-blue-500/30" />
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
-                            <Cpu className="w-3.5 h-3.5 text-[#0969da]" />
-                            Agent 1: Semantic Classifier
+                    {/* Title & Badges */}
+                    <div className="flex flex-col gap-1.5">
+                      <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground leading-none">
+                        {selectedIssue.title || 'Civic Issue'}
+                      </DialogTitle>
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-sm ${status.bgClass} ${status.borderClass} ${status.textClass}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
+                          {status.label}
+                        </span>
+                        {selectedIssue.is_emergency && (
+                          <span className="bg-rose-950/30 border border-rose-900/30 text-rose-500 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider animate-pulse flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Emergency
                           </span>
-                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Analyzed raw text/media, classified category, subcategory and mapped initial severity.
-                        </p>
-                        
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
-                          <div>
-                            <span className="text-muted-foreground font-semibold">Subcategory:</span>
-                            <span className="text-muted-foreground ml-1 font-medium capitalize">{selectedIssue.subcategory || 'N/A'}</span>
-                          </div>
-                          
-                          {/* Severity Indicator */}
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-muted-foreground font-semibold">Severity Score:</span>
-                            <span className={`font-bold ${severity.color.split(' ')[0]}`}>{selectedIssue.severity}/10</span>
-                            <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
-                              <div
-                                className={`h-full rounded-full ${
-                                  selectedIssue.severity >= 7 ? 'bg-rose-500' : selectedIssue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500'
-                                }`}
-                                style={{ width: `${selectedIssue.severity * 10}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AGENT 2: DEDUPLICATION */}
-                    <div className="relative">
-                      <div className="absolute -left-[31px] top-0.5 bg-[#2da44e] border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-blue-500/30" />
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
-                            <Database className="w-3.5 h-3.5 text-[#0969da]" />
-                            Agent 2: Vector Deduplicator
-                          </span>
-                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Scanned localized pgvector database within a 200-meter radius to prevent duplicate reports.
-                        </p>
-                        <div className="bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
-                          {selectedIssue.cluster_id ? (
-                            <p className="text-muted-foreground font-medium">
-                              Linked to Active Issue Cluster: <code className="bg-background px-1.5 py-0.5 rounded text-indigo-400 font-mono text-[9px]">{selectedIssue.cluster_id}</code>. Automatic aggregation enabled.
-                            </p>
-                          ) : (
-                            <p className="text-emerald-400 font-semibold flex items-center gap-1.5">
-                              <ShieldCheck className="w-3.5 h-3.5" /> Checked unique report. No duplicate entries detected within range.
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AGENT 3: VALIDATION */}
-                    <div className="relative">
-                      <div className="absolute -left-[31px] top-0.5 bg-[#2da44e] border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-blue-500/30" />
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
-                            <ShieldCheck className="w-3.5 h-3.5 text-[#0969da]" />
-                            Agent 3: Credibility Validator
-                          </span>
-                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Verified credibility index against historical data, user profile reliability, and weather datasets.
-                        </p>
-                        
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
-                          <div>
-                            <span className="text-muted-foreground font-semibold">Credibility Index:</span>
-                            <span className="text-emerald-400 ml-1 font-bold">
-                              {selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : '91%'}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground font-semibold">Automatic Validation:</span>
-                            <span className="text-emerald-400 ml-1 font-semibold">Approved (score ≥ 60%)</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AGENT 4: RESOLUTION PLANNING */}
-                    <div className="relative">
-                      <div className="absolute -left-[31px] top-0.5 bg-[#2da44e] border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md shadow-blue-500/30" />
-                      <div className="space-y-1.5">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
-                            <Sparkles className="w-3.5 h-3.5 text-[#0969da]" />
-                            Agent 4: Resolution Routing & SLA Planner
-                          </span>
-                          <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Generated a concise civic action brief for department staff and computed completion SLA.
-                        </p>
-                        
-                        {selectedIssue.civic_brief ? (
-                          <div className="bg-background border border-border rounded-xl p-3.5 shadow-inner">
-                            <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                              <FileText className="w-3 h-3" /> Generated Civic Brief (Officer view)
-                            </span>
-                            <p className="text-[11px] text-muted-foreground italic leading-relaxed">
-                              &ldquo;{selectedIssue.civic_brief}&rdquo;
-                            </p>
-                          </div>
-                        ) : (
-                          <p className="text-[10px] text-muted-foreground italic">SLA generated, awaiting brief indexing.</p>
                         )}
                       </div>
                     </div>
+                  </div>
 
-                    {/* AGENT 5: PREDICTIVE ANALYTICS */}
-                    <div className="relative">
-                      <div className="absolute -left-[31px] top-0.5 bg-slate-850 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md" />
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 leading-none">
-                            <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
-                            Agent 5: Predictive Analytics Agent
-                          </span>
-                          <span className="text-[9px] font-bold text-muted-foreground bg-card px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">SCHEDULED</span>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed">
-                          Runs asynchronously to analyze ward-level trends and predict seasonal civic issues.
+                  {/* Location (Top Right) */}
+                  <div className="flex items-start gap-2 text-foreground text-sm font-medium sm:text-right sm:max-w-[300px] mt-2 sm:mt-0 bg-card/40 p-2.5 rounded-xl border border-border/50">
+                    <MapPin className="w-4 h-4 mt-0.5 text-[#0969da] shrink-0 sm:order-2 sm:mt-0.5 sm:ml-2" />
+                    <div className="flex flex-col sm:items-end w-full">
+                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Location</p>
+                      <span className="leading-snug text-xs text-muted-foreground break-words w-full">{selectedIssue.address || 'Address recorded'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="w-full h-px bg-border mb-8" />
+
+                {/* Single Column Layout */}
+                <div className="space-y-8">
+                  
+                  {/* Description */}
+                  <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line font-medium">
+                    {selectedIssue.description}
+                  </p>
+
+                  {/* Routing Details */}
+                  <div className="bg-card/50 border border-border rounded-xl p-5 space-y-4">
+                    <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none">
+                      <Building className="w-4 h-4 text-muted-foreground" /> Administrative Routing Details
+                    </h4>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground font-semibold">Assigned Department</span>
+                        <p className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-1">
+                          <Building className="w-4 h-4 text-indigo-400" />
+                          {selectedIssue.department_id ? `Department ID: ${selectedIssue.department_id}` : 'Municipal Processing Queue'}
                         </p>
                       </div>
-                    </div>
 
+                      <div className="space-y-0.5">
+                        <span className="text-[10px] text-muted-foreground font-semibold">SLA Resolution Target</span>
+                        {selectedIssue.status === 'resolved' ? (
+                          <p className="text-xs font-bold text-emerald-400 flex items-center gap-1.5 mt-1">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            Resolved
+                          </p>
+                        ) : selectedIssue.sla_deadline ? (
+                          <div className="mt-1">
+                            <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                              <Calendar className="w-4 h-4 text-amber-400" />
+                              {new Date(selectedIssue.sla_deadline).toLocaleDateString('en-IN', {
+                                day: 'numeric', month: 'short', year: 'numeric'
+                              })}
+                            </p>
+                            {slaDays !== null && (
+                              <p className={`text-[10px] font-semibold mt-1 ${
+                                slaDays < 0 ? 'text-rose-400' : 'text-amber-400'
+                              }`}>
+                                {slaDays < 0 ? `Overdue by ${Math.abs(slaDays)} days` : slaDays === 0 ? 'Due today' : `${slaDays} days remaining`}
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <p className="text-xs text-muted-foreground italic mt-1">Pending SLA Assignment</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI Processing Trace (Stepper / Timeline) */}
+                  <div className="space-y-5">
+                    <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none pl-1">
+                      <Cpu className="w-4 h-4 text-muted-foreground" /> AI Agent Pipeline Processing Trace
+                    </h4>
+
+                    <div className="relative pl-6 border-l-2 border-border/80 space-y-7 ml-2">
+                      
+                      {/* AGENT 1: CLASSIFIER */}
+                      {(() => {
+                        const state1 = getAgentState(selectedIssue.pipeline_stage, 'agent1_classifier')
+                        return (
+                          <div className={`relative ${state1 === 'pending' ? 'opacity-40' : ''}`}>
+                            <AgentDot state={state1} />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
+                                  <Cpu className="w-3.5 h-3.5 text-[#0969da]" />
+                                  Agent 1: Semantic Classifier
+                                </span>
+                                <AgentStatusBadge state={state1} />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Analyzed raw text/media, classified category, subcategory and mapped initial severity.
+                              </p>
+                              
+                              {state1 === 'done' && (
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
+                                  <div>
+                                    <span className="text-muted-foreground font-semibold">Subcategory:</span>
+                                    <span className="text-muted-foreground ml-1 font-medium capitalize">{selectedIssue.subcategory || 'N/A'}</span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-muted-foreground font-semibold">Severity Score:</span>
+                                    <span className={`font-bold ${severity.color.split(' ')[0]}`}>{selectedIssue.severity}/10</span>
+                                    <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
+                                      <div
+                                        className={`h-full rounded-full ${
+                                          selectedIssue.severity >= 7 ? 'bg-rose-500' : selectedIssue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500'
+                                        }`}
+                                        style={{ width: `${(selectedIssue.severity || 0) * 10}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* AGENT 2: DEDUPLICATION */}
+                      {(() => {
+                        const state2 = getAgentState(selectedIssue.pipeline_stage, 'agent2_deduplication')
+                        return (
+                          <div className={`relative ${state2 === 'pending' ? 'opacity-40' : ''}`}>
+                            <AgentDot state={state2} />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
+                                  <Database className="w-3.5 h-3.5 text-[#0969da]" />
+                                  Agent 2: Vector Deduplicator
+                                </span>
+                                <AgentStatusBadge state={state2} />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Scanned localized pgvector database within a 200-meter radius to prevent duplicate reports.
+                              </p>
+                              {state2 === 'done' && (
+                                <div className="bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
+                                  {selectedIssue.cluster_id ? (
+                                    <p className="text-muted-foreground font-medium">
+                                      Linked to Active Issue Cluster: <code className="bg-background px-1.5 py-0.5 rounded text-indigo-400 font-mono text-[9px]">{selectedIssue.cluster_id}</code>. Automatic aggregation enabled.
+                                    </p>
+                                  ) : (
+                                    <p className="text-emerald-400 font-semibold flex items-center gap-1.5">
+                                      <ShieldCheck className="w-3.5 h-3.5" /> Checked unique report. No duplicate entries detected within range.
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* AGENT 3: VALIDATION */}
+                      {(() => {
+                        const state3 = getAgentState(selectedIssue.pipeline_stage, 'agent3_validation')
+                        return (
+                          <div className={`relative ${state3 === 'pending' ? 'opacity-40' : ''}`}>
+                            <AgentDot state={state3} />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-[#0969da]" />
+                                  Agent 3: Credibility Validator
+                                </span>
+                                <AgentStatusBadge state={state3} />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Verified credibility index against historical data, user profile reliability, and weather datasets.
+                              </p>
+                              
+                              {state3 === 'done' && (
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
+                                  <div>
+                                    <span className="text-muted-foreground font-semibold">Credibility Index:</span>
+                                    <span className="text-emerald-400 ml-1 font-bold">
+                                      {selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : '91%'}
+                                    </span>
+                                  </div>
+                                  <div>
+                                    <span className="text-muted-foreground font-semibold">Automatic Validation:</span>
+                                    <span className="text-emerald-400 ml-1 font-semibold">Approved (score ≥ 60%)</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* AGENT 4: RESOLUTION PLANNING */}
+                      {(() => {
+                        const state4 = getAgentState(selectedIssue.pipeline_stage, 'agent4_resolution')
+                        return (
+                          <div className={`relative ${state4 === 'pending' ? 'opacity-40' : ''}`}>
+                            <AgentDot state={state4} />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
+                                  <Sparkles className="w-3.5 h-3.5 text-[#0969da]" />
+                                  Agent 4: Resolution Routing & SLA Planner
+                                </span>
+                                <AgentStatusBadge state={state4} />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Generated a concise civic action brief for department staff and computed completion SLA.
+                              </p>
+                              
+                              {state4 === 'done' && (
+                                <>
+                                  {selectedIssue.civic_brief ? (
+                                    <div className="bg-background border border-border rounded-xl p-3.5 shadow-inner">
+                                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1.5">
+                                        <FileText className="w-3 h-3" /> Generated Civic Brief (Officer view)
+                                      </span>
+                                      <p className="text-[11px] text-muted-foreground italic leading-relaxed">
+                                        &ldquo;{selectedIssue.civic_brief}&rdquo;
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <p className="text-[10px] text-muted-foreground italic">SLA generated, awaiting brief indexing.</p>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                      {/* AGENT 5: PREDICTIVE ANALYTICS */}
+                      {(() => {
+                        const state5 = getAgentState(selectedIssue.pipeline_stage, 'completed')
+                        return (
+                          <div className={`relative ${state5 === 'pending' ? 'opacity-40' : ''}`}>
+                            <div className={`absolute -left-[33px] top-0.5 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${state5 === 'done' ? 'bg-[#2da44e] shadow-emerald-500/30' : 'bg-slate-800 opacity-40'}`} />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 leading-none">
+                                  <TrendingUp className="w-3.5 h-3.5 text-muted-foreground" />
+                                  Agent 5: Predictive Analytics Agent
+                                </span>
+                                <span className="text-[9px] font-bold text-muted-foreground bg-card px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">SCHEDULED</span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Runs asynchronously to analyze ward-level trends and predict seasonal civic issues.
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })()}
+
+                    </div>
                   </div>
                 </div>
 
                 {/* Footer Buttons */}
-                <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-4 border-t border-border/60">
-                  <Button
-                    onClick={() => {
-                      toast.success('Card Copied', {
-                        description: 'Impact receipt link has been copied to your clipboard.',
-                      })
-                    }}
-                    variant="outline"
-                    className="w-full sm:w-auto border-border text-muted-foreground hover:text-foreground hover:bg-card/60 text-xs h-9"
-                  >
-                    <ArrowUpRight className="w-3.5 h-3.5 mr-1.5" /> Share Impact Receipt
-                  </Button>
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-8 mt-4 border-t border-border">
                   <Button
                     onClick={() => setSelectedIssue(null)}
-                    className="w-full sm:w-auto bg-card border border-border hover:bg-muted text-foreground text-xs h-9"
+                    className="w-full sm:w-auto bg-card border border-border hover:bg-muted text-foreground text-xs h-10 px-6 rounded-xl"
                   >
                     Close Details
                   </Button>

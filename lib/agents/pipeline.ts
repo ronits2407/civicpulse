@@ -63,23 +63,7 @@ async function saveToDatabase(state: AgentState): Promise<AgentState> {
       await supabase.rpc('increment_cluster_count', {
         cluster_id: state.deduplication.cluster_id,
       })
-      return state
     }
-
-    const { error } = await supabase.from('issues').update({
-      title: state.classification?.suggested_title,
-      category: state.classification?.category,
-      subcategory: state.classification?.subcategory,
-      severity: state.classification?.severity,
-      is_emergency: state.classification?.is_emergency,
-      department_id: state.resolution?.department_id || state.classification?.department_id,
-      credibility_score: state.validation?.credibility_score,
-      civic_brief: state.resolution?.civic_brief,
-      sla_deadline: state.resolution?.sla_deadline,
-      status: 'open',
-    }).eq('id', state.reportId)
-
-    if (error) throw error
 
     return state
   } catch (error: any) {

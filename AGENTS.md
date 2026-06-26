@@ -16,7 +16,7 @@ An AI-powered civic issue reporting platform for Indian cities (specifically Nas
 - **Framework**: Next.js 15 (App Router, TypeScript, no src dir, flat structure). Currently running **Next.js 16.2.9 with Turbopack**.
 - **Package manager**: `bun` — always use `bun add`, `bun run`, `bunx` instead of npm/npx
 - **Styling**: Tailwind CSS + shadcn/ui (Radix preset, Mira theme, Slate base color)
-- **AI**: `@google/generative-ai` — Gemini 2.5 Flash (agents 1–4), Gemini 2.5 Pro (agent 5 async), `text-embedding-004` for pgvector embeddings
+- **AI**: `@google/generative-ai` — Gemini 2.5 Flash (agents 1–4), Gemini 2.5 Pro (agent 5 async), `text-embedding-004` for pgvector embeddings. Includes `openai` for Ollama cloud/local support.
 - **Agent orchestration**: `@langchain/langgraph` + `@langchain/core`
 - **Database**: Supabase (Postgres + PostGIS + pgvector + Realtime + Auth + Storage)
 - **Maps**: Mapbox GL JS (frontend rendering) + Google Maps Geocoding API + Google Maps Static API (backend only)
@@ -34,7 +34,7 @@ An AI-powered civic issue reporting platform for Indian cities (specifically Nas
 /components/ui              → shadcn components
 /components/dashboard/      → DashboardClient.tsx (realtime Supabase listener)
 /lib/agents/                → LangGraph nodes (one file per agent + pipeline.ts)
-/lib/gemini/client.ts       → Gemini API wrapper (Flash, Pro, embeddings, image analysis)
+/lib/ai/client.ts           → Unified AI API wrapper (Gemini / Ollama, Flash, Pro, embeddings, image analysis)
 /lib/db/client.ts           → Supabase clients (browser, server, service role)
 /lib/db/types.ts            → All TypeScript types (Issue, Profile, AgentState, etc.)
 /lib/auth/actions.ts        → Server actions: signInWithGoogle, signInWithEmail, signOut, getUser
@@ -69,7 +69,8 @@ An AI-powered civic issue reporting platform for Indian cities (specifically Nas
 ## What Is Built and Working (as of session end)
 - ✅ `lib/db/client.ts` — all three Supabase clients
 - ✅ `lib/db/types.ts` — all TypeScript interfaces
-- ✅ `lib/gemini/client.ts` — Flash, Pro, embedding, image analysis, structured JSON helpers
+- ✅ `lib/ai/client.ts` — Unified multi-provider AI client (Gemini/Ollama), Flash, Pro, embedding, image analysis, structured JSON helpers
+- ✅ `app/api/geocode/route.ts` — Google Maps Geocoding API wrapper
 - ✅ `lib/agents/agent1-classifier.ts` through `agent4-resolution.ts`
 - ✅ `lib/agents/pipeline.ts` — LangGraph StateGraph wiring all 4 nodes + saveToDatabase
 - ✅ `app/api/reports/process/route.ts` — main pipeline entry point
@@ -89,7 +90,7 @@ An AI-powered civic issue reporting platform for Indian cities (specifically Nas
 - [ ] `/receipt/[issue_id]` — Impact Receipt shareable card (next/og)
 - [ ] Seed script (Faker.js, 6 months of synthetic Nashik data)
 - [ ] Community verification UI
-- [ ] Maps integration (`lib/maps/`) — Mapbox GL JS, Google Geocoding wrapper
+- [ ] Maps integration (`lib/maps/`) — Mapbox GL JS frontend rendering
 
 ## Environment Variables Required (all in `.env.local`)
 ```

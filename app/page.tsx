@@ -16,12 +16,12 @@ export default async function HomePage() {
         AI-powered civic issue reporting. Report problems, track resolutions, build a better city.
       </p>
       <div className="flex gap-4">
-        <Link href="/auth/login">
+        <Link href="/auth/login?role=citizen">
           <Button className="bg-[#2da44e] hover:bg-[#2c974b] text-white border border-[#2da44e] px-8 h-10 font-semibold shadow-sm">
             Citizen
           </Button>
         </Link>
-        <Link href="/admin/login">
+        <Link href="/auth/login?role=admin">
           <Button variant="outline" className="text-foreground hover:bg-accent border-border px-8 h-10 font-semibold shadow-sm">
             Municipal
           </Button>

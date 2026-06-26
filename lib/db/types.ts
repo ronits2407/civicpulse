@@ -57,6 +57,14 @@ export interface Verification {
   created_at: string
 }
 
+export interface IssueComment {
+  id: string
+  issue_id: string
+  user_id: string
+  comment_text: string
+  created_at: string
+}
+
 export interface KarmaEvent {
   id: string
   user_id: string

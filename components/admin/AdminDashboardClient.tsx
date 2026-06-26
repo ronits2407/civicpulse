@@ -194,7 +194,7 @@ interface Props {
   departments: Department[]
 }
 
-export function DashboardClient({ user, profile, initialIssues, departments }: Props) {
+export function AdminDashboardClient({ user, profile, initialIssues, departments }: Props) {
   const router = useRouter()
   const [issues, setIssues] = useState<Issue[]>(initialIssues)
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null)
@@ -203,120 +203,74 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
-  const [isSettingLocation, setIsSettingLocation] = useState(false)
-  const [nearbyReviews, setNearbyReviews] = useState<Issue[]>([])
-  const [isFetchingReviews, setIsFetchingReviews] = useState(false)
-  const [voteTally, setVoteTally] = useState<{ confirms: number; denies: number } | null>(null)
+  
+  // Admin states
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
+  const [comments, setComments] = useState<any[]>([])
+  const [newComment, setNewComment] = useState('')
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false)
 
+  // Fetch comments when an issue is selected
   useEffect(() => {
-    if (selectedIssue?.status === 'community_review') {
-      const fetchTally = async () => {
-        try {
-          const supabase = createClient()
-          const { data } = await supabase.from('verifications').select('verdict').eq('issue_id', selectedIssue.id)
-          if (data) {
-            const confirms = data.filter(v => v.verdict).length
-            const denies = data.filter(v => !v.verdict).length
-            setVoteTally({ confirms, denies })
-          }
-        } catch (e) {}
-      }
-      fetchTally()
+    if (selectedIssue) {
+      fetchComments(selectedIssue.id)
     } else {
-      setVoteTally(null)
+      setComments([])
     }
   }, [selectedIssue])
-  
-  const fetchNearbyReviews = async () => {
-    if (!profile?.home_location) return
-    setIsFetchingReviews(true)
+
+  const fetchComments = async (issueId: string) => {
     try {
-      const res = await fetch(`/api/reviews?userId=${user.id}`)
+      const res = await fetch(`/api/admin/issues/${issueId}/comments`)
       if (res.ok) {
         const data = await res.json()
-        setNearbyReviews(data.issues || [])
+        setComments(data.comments || [])
       }
     } catch (e) {
-      console.error(e)
-    } finally {
-      setIsFetchingReviews(false)
+      console.error('Failed to fetch comments', e)
     }
   }
 
-  useEffect(() => {
-    fetchNearbyReviews()
-  }, [profile?.home_location])
-
-  const handleVote = async (issueId: string, verdict: boolean) => {
-    const toastId = toast.loading('Submitting your vote...')
+  const handleUpdateIssue = async (updates: Partial<Issue>) => {
+    if (!selectedIssue) return
+    setIsUpdatingStatus(true)
+    const toastId = toast.loading('Updating issue...')
     try {
-      const res = await fetch(`/api/reviews/${issueId}/vote`, {
-        method: 'POST',
+      const res = await fetch(`/api/admin/issues/${selectedIssue.id}`, {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, verdict, distanceMeters: 0 })
+        body: JSON.stringify(updates)
       })
-      if (!res.ok) throw new Error('Failed to submit vote')
-      toast.success('Vote submitted successfully!', { id: toastId })
-      setNearbyReviews(prev => prev.filter(i => i.id !== issueId))
+      if (!res.ok) throw new Error('Failed to update')
+      toast.success('Issue updated successfully', { id: toastId })
+      // Update local state
+      setSelectedIssue({ ...selectedIssue, ...updates })
+      setIssues(issues.map(i => i.id === selectedIssue.id ? { ...i, ...updates } : i))
     } catch (error: any) {
       toast.error(error.message, { id: toastId })
+    } finally {
+      setIsUpdatingStatus(false)
     }
   }
 
-  const handleSetHomeLocation = () => {
-    setIsSettingLocation(true)
-    if (!navigator.geolocation) {
-      toast.error('Geolocation is not supported by your browser')
-      setIsSettingLocation(false)
-      return
+  const handleSubmitComment = async () => {
+    if (!selectedIssue || !newComment.trim()) return
+    setIsSubmittingComment(true)
+    try {
+      const res = await fetch(`/api/admin/issues/${selectedIssue.id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, commentText: newComment })
+      })
+      if (!res.ok) throw new Error('Failed to post comment')
+      const data = await res.json()
+      setComments([...comments, { ...data.comment, profiles: profile }])
+      setNewComment('')
+    } catch (error: any) {
+      toast.error(error.message)
+    } finally {
+      setIsSubmittingComment(false)
     }
-
-    toast.loading('Finding your location...', { id: 'location-toast' })
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const lat = position.coords.latitude
-          const lng = position.coords.longitude
-          
-          // Reverse geocode to get city/state
-          let address = null
-          try {
-            const geoRes = await fetch(`/api/geocode?lat=${lat}&lng=${lng}`)
-            if (geoRes.ok) {
-              const geoData = await geoRes.json()
-              if (geoData.address) {
-                address = geoData.address
-              }
-            }
-          } catch (e) {
-            console.error('Geocoding failed:', e)
-          }
-
-          const res = await fetch('/api/profile/home-location', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              userId: user.id,
-              lat,
-              lng,
-              address
-            }),
-          })
-          if (!res.ok) throw new Error('Failed to save home location')
-          toast.success('Home location saved successfully! Refreshing dashboard...', { id: 'location-toast' })
-          setIsProfileOpen(false)
-          setTimeout(() => window.location.reload(), 1500)
-        } catch (error: any) {
-          toast.error(error.message, { id: 'location-toast' })
-        } finally {
-          setIsSettingLocation(false)
-        }
-      },
-      (error) => {
-        toast.error('Unable to retrieve your location', { id: 'location-toast' })
-        setIsSettingLocation(false)
-      }
-    )
   }
 
   const departmentMap = useMemo(() => {
@@ -355,7 +309,6 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
           event: '*',
           schema: 'public',
           table: 'issues',
-          filter: `user_id=eq.${user.id}`,
         },
         payload => {
           if (payload.eventType === 'UPDATE') {
@@ -392,13 +345,12 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user.id])
+  }, [])
 
   // Statistics calculations
   const totalCount = issues.length
   const resolvedCount = issues.filter(i => i.status === 'resolved').length
   const activeCount = issues.filter(i => i.status === 'open' || i.status === 'in_progress').length
-  const resolutionRate = totalCount > 0 ? Math.round((resolvedCount / totalCount) * 100) : 0
 
   // Filtered & Sorted issues
   const filteredIssues = useMemo(() => {
@@ -421,14 +373,6 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       })
   }, [issues, statusFilter, categoryFilter])
-
-  // Karma Level Computations
-  const karmaScore = profile?.karma_score || 0
-  const karmaLvl = getKarmaLevel(karmaScore)
-  const karmaProgress = karmaLvl.level === 4
-    ? 100
-    : Math.min(100, Math.max(0, ((karmaScore - karmaLvl.min) / (karmaLvl.max - karmaLvl.min)) * 100))
-  const karmaToNext = karmaLvl.max - karmaScore
 
   // Helper for severity displays
   const getSeverityLabel = (s: number) => {
@@ -507,32 +451,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                         </p>
                       )}
                     </div>
-                    {/* Action: Set Home Location */}
-                    {profile?.home_address ? (
-                      <div className="px-4 py-2 border-b border-border text-left bg-muted/30">
-                        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-0.5">Home Location</p>
-                        <p className="text-xs font-semibold text-foreground flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-[#0969da]" />
-                          {profile.home_address}
-                        </p>
-                        <button
-                          onClick={handleSetHomeLocation}
-                          disabled={isSettingLocation}
-                          className="text-[10px] text-muted-foreground hover:text-foreground mt-1 underline underline-offset-2 disabled:opacity-50"
-                        >
-                          {isSettingLocation ? 'Updating...' : 'Update location'}
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={handleSetHomeLocation}
-                        disabled={isSettingLocation}
-                        className="w-full text-left px-4 py-2 text-xs text-foreground hover:bg-muted transition-colors flex items-center gap-2 font-medium cursor-pointer disabled:opacity-50 border-b border-border"
-                      >
-                        {isSettingLocation ? <Loader2 className="w-4 h-4 animate-spin" /> : <MapPin className="w-4 h-4" />}
-                        Set Home Location
-                      </button>
-                    )}
+                    {/* Removed Set Home Location for Admin */}
                     {/* Action: Sign Out */}
                     <form action={signOut} className="w-full">
                       <button
@@ -559,16 +478,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
           <div className="lg:col-span-1 space-y-6">
 
 
-            {/* Quick Actions (Large Primary Button) */}
-            <Button
-              onClick={() => router.push('/report')}
-              className="w-full bg-[#2da44e] hover:bg-[#2c974b] text-foreground font-semibold text-sm h-12 rounded-xl transition-colors group"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-                Report a New Issue
-              </div>
-            </Button>
+
 
             {/* Rich Statistics Overview */}
             <div className="space-y-3">
@@ -598,10 +508,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     colorClass: 'text-emerald-400 bg-emerald-950/20 border-emerald-900/30'
                   },
                   {
-                    label: 'Karma Gained',
-                    value: karmaScore,
-                    icon: Award,
-                    colorClass: 'text-purple-400 bg-purple-950/20 border-purple-900/30'
+                    label: 'Unassigned',
+                    value: issues.filter(i => !i.department_id).length,
+                    icon: AlertCircle,
+                    colorClass: 'text-rose-400 bg-rose-950/20 border-rose-900/30'
                   }
                 ].map(stat => (
                   <Card key={stat.label} className="bg-card border-border">
@@ -624,65 +534,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
             </div>
 
-            {/* "Your Community Needs You" Section (Moved to Left Column) */}
-            {profile?.home_location && nearbyReviews.length > 0 && (
-              <div className="bg-card border border-border rounded-2xl p-4 space-y-4 shadow-[0_0_15px_rgba(245,158,11,0.1)] border-amber-500/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <ShieldCheck className="w-5 h-5 text-amber-500" />
-                  <h2 className="text-base font-bold text-foreground">Community Review</h2>
-                  <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[10px] ml-auto">
-                    {nearbyReviews.length} Pending
-                  </Badge>
-                </div>
-                <div className="space-y-4">
-                  {nearbyReviews.map(review => (
-                    <div key={review.id} className="p-4 rounded-xl bg-background/50 border border-border flex flex-col gap-3">
-                      {review.photo_url && (
-                        <div className="w-full h-32 rounded-lg overflow-hidden border border-border mb-1">
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img src={review.photo_url} alt="Issue" className="w-full h-full object-cover" />
-                        </div>
-                      )}
-                      <div className="flex justify-between items-start gap-2">
-                        <div>
-                          <h4 className="font-semibold text-sm leading-tight">{review.title}</h4>
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{review.description}</p>
-                        </div>
-                        {review.credibility_score !== null && (
-                          <Badge variant="outline" className="bg-background text-[10px] shrink-0">
-                            Score: {review.credibility_score}/10
-                          </Badge>
-                        )}
-                      </div>
-                      {review.reasoning && (
-                        <div className="bg-muted/50 p-2 rounded text-[10px] border border-border">
-                          <span className="font-semibold text-muted-foreground mr-1">AI Note:</span>
-                          <span className="text-muted-foreground">{review.reasoning}</span>
-                        </div>
-                      )}
-                      <div className="flex gap-2 mt-1">
-                        <Button 
-                          onClick={() => handleVote(review.id, true)} 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-400 border-emerald-500/30 text-[11px] h-8"
-                        >
-                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Confirm
-                        </Button>
-                        <Button 
-                          onClick={() => handleVote(review.id, false)} 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400 border-rose-500/30 text-[11px] h-8"
-                        >
-                          <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Deny
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Removed Community Needs You for Admin */}
 
           </div>
 
@@ -694,7 +546,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                 <div>
                   <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-                    Your Civic Reports
+                    Municipal Inbox
                     <Badge variant="outline" className="bg-background/60 border-border text-muted-foreground text-xs px-2 py-0.5 h-5 font-semibold">
                       {filteredIssues.length}
                     </Badge>
@@ -789,14 +641,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                           >
                             Reset Filter Settings
                           </Button>
-                        ) : (
-                          <Button
-                            onClick={() => router.push('/report')}
-                            className="mt-4 bg-[#2da44e] hover:bg-blue-500 text-foreground text-[10px] font-semibold h-8 px-4"
-                          >
-                            Submit First Report
-                          </Button>
-                        )}
+                        ) : null}
                       </CardContent>
                     </Card>
                   </motion.div>
@@ -1238,6 +1083,101 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                       })()}
 
                     </div>
+                  </div>
+                </div>
+
+                {/* Divider between AI trace and Admin Actions */}
+                <div className="w-full h-px bg-border my-8" />
+
+                {/* Admin Controls Section */}
+                <div className="bg-card/50 border border-border rounded-xl p-5 space-y-4 mb-6">
+                  <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none">
+                    <Wrench className="w-4 h-4 text-muted-foreground" /> Admin Actions
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-muted-foreground font-semibold">Update Status</label>
+                      <select 
+                        disabled={isUpdatingStatus}
+                        className="w-full text-xs bg-background border border-border rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                        value={selectedIssue.status}
+                        onChange={(e) => handleUpdateIssue({ status: e.target.value })}
+                      >
+                        <option value="open">Under Review</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                        <option value="false_closure">Disputed</option>
+                      </select>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] text-muted-foreground font-semibold">Assign Department</label>
+                      <select 
+                        disabled={isUpdatingStatus}
+                        className="w-full text-xs bg-background border border-border rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
+                        value={selectedIssue.department_id || ''}
+                        onChange={(e) => handleUpdateIssue({ department_id: e.target.value })}
+                      >
+                        <option value="">Unassigned</option>
+                        {departments.map(d => (
+                          <option key={d.id} value={d.id}>{d.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Internal Municipal Comments */}
+                <div className="space-y-4">
+                  <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none pl-1">
+                    <FileText className="w-4 h-4 text-muted-foreground" /> Internal Municipal Comments
+                  </h4>
+                  <div className="bg-background border border-border rounded-xl p-4 space-y-4 max-h-[300px] overflow-y-auto mb-4">
+                    {comments.length === 0 ? (
+                      <p className="text-xs text-muted-foreground text-center py-4">No comments yet. Be the first to add one.</p>
+                    ) : (
+                      comments.map(c => {
+                        // Use the currently logged-in user's avatar if they are the author
+                        const isMe = c.user_id === user.id;
+                        const avatarUrl = isMe ? (user.user_metadata?.avatar_url || user.user_metadata?.picture) : null;
+                        
+                        return (
+                          <div key={c.id} className="flex gap-3">
+                            <Avatar className="w-8 h-8 rounded-full border border-border shrink-0">
+                              {avatarUrl && <AvatarImage src={avatarUrl} />}
+                              <AvatarFallback className="text-[10px]">
+                                {c.profiles?.full_name?.[0]?.toUpperCase() || c.profiles?.email?.[0]?.toUpperCase() || 'M'}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 bg-card border border-border p-3 rounded-lg rounded-tl-none">
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-xs font-semibold text-foreground">{c.profiles?.full_name || 'Municipal Officer'}</span>
+                                <span className="text-[10px] text-muted-foreground">{new Date(c.created_at).toLocaleString()}</span>
+                              </div>
+                              <p className="text-xs text-muted-foreground whitespace-pre-line">{c.comment_text}</p>
+                            </div>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2 items-start mt-2">
+                    <textarea 
+                      placeholder="Add an internal comment..."
+                      className="flex-1 text-xs bg-background border border-border rounded-lg p-3 min-h-[80px] resize-y focus:ring-1 focus:ring-blue-500"
+                      value={newComment}
+                      onChange={e => setNewComment(e.target.value)}
+                    />
+                    <Button 
+                      onClick={handleSubmitComment} 
+                      disabled={isSubmittingComment || !newComment.trim()}
+                      className="bg-[#0969da] hover:bg-blue-600 text-white font-semibold text-xs h-10 px-4 shrink-0"
+                    >
+                      {isSubmittingComment ? 'Posting...' : 'Post'}
+                    </Button>
                   </div>
                 </div>
 

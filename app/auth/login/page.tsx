@@ -7,7 +7,12 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { motion } from 'framer-motion'
 
+import { useSearchParams } from 'next/navigation'
+
 export default function LoginPage() {
+  const searchParams = useSearchParams()
+  const role = searchParams.get('role') || 'citizen'
+  
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
@@ -18,7 +23,7 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const result = await signInWithEmail(email)
+    const result = await signInWithEmail(email, role)
 
     if (result?.error) {
       setError(result.error)
@@ -83,6 +88,7 @@ export default function LoginPage() {
                 </div>
 
                 <form action={signInWithGoogle}>
+                  <input type="hidden" name="role" value={role} />
                   <Button
                     type="submit"
                     variant="outline"

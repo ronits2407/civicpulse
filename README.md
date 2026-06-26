@@ -72,7 +72,7 @@ CivicPulse is an AI-powered civic issue reporting and management platform design
 │   └── utils.ts                # Tailwind merge utilities
 ├── supabase/
 │   └── migrations/             # SQL migrations containing table definitions and triggers
-├── middleware.ts               # Auth guard protecting /dashboard, /report, and /admin
+├── proxy.ts                    # Auth guard protecting /dashboard, /report, and /admin
 ├── package.json                # Project dependencies and npm scripts
 └── Dockerfile                  # Docker build configuration targeting Cloud Run
 ```

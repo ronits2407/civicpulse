@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/db/server'
+import wkx from 'wkx'
 
 // Haversine distance in meters
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -60,16 +61,31 @@ export async function GET(req: NextRequest) {
     let lat = 0;
     let lng = 0;
     
-    if (typeof profile.home_location === 'string' && profile.home_location.startsWith('POINT')) {
-      const match = profile.home_location.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
-      if (match) {
-        lng = parseFloat(match[1]);
-        lat = parseFloat(match[2]);
+    if (typeof profile.home_location === 'string') {
+      if (profile.home_location.startsWith('POINT')) {
+        const match = profile.home_location.match(/POINT\(([-\d.]+) ([-\d.]+)\)/);
+        if (match) {
+          lng = parseFloat(match[1]);
+          lat = parseFloat(match[2]);
+        }
+      } else {
+        // Parse hex WKB string
+        try {
+          const geom = wkx.Geometry.parse(Buffer.from(profile.home_location, 'hex')) as any;
+          if (geom.x && geom.y) {
+            lng = geom.x;
+            lat = geom.y;
+          }
+        } catch (e) {
+          console.error('Failed to parse home_location WKB:', e)
+        }
       }
     } else if (profile.home_location?.type === 'Point' && Array.isArray(profile.home_location.coordinates)) {
       lng = profile.home_location.coordinates[0];
       lat = profile.home_location.coordinates[1];
-    } else {
+    }
+    
+    if (!lat || !lng) {
        return NextResponse.json({ issues: [] })
     }
 
@@ -100,9 +116,36 @@ export async function GET(req: NextRequest) {
       if (votedIssueIds.has(issue.id)) return false
       
       // Check distance (1km radius)
-      if (issue.location && typeof issue.location === 'object') {
-        const issueLat = (issue.location as any).lat
-        const issueLng = (issue.location as any).lng
+      let issueLat = 0
+      let issueLng = 0
+
+      if (typeof issue.location === 'string') {
+        if (issue.location.startsWith('POINT')) {
+          const match = issue.location.match(/POINT\(([-\d.]+) ([-\d.]+)\)/)
+          if (match) {
+            issueLng = parseFloat(match[1])
+            issueLat = parseFloat(match[2])
+          }
+        } else {
+          try {
+            const geom = wkx.Geometry.parse(Buffer.from(issue.location, 'hex')) as any;
+            if (geom.x && geom.y) {
+              issueLng = geom.x;
+              issueLat = geom.y;
+            }
+          } catch (e) {
+            console.error('Failed to parse issue.location WKB:', e)
+          }
+        }
+      } else if (issue.location?.type === 'Point' && Array.isArray(issue.location.coordinates)) {
+        issueLng = issue.location.coordinates[0]
+        issueLat = issue.location.coordinates[1]
+      } else {
+        // Just return true for now if we can't parse it so we don't drop issues silently during testing
+        return true
+      }
+
+      if (issueLat && issueLng) {
         const distance = getDistance(lat, lng, issueLat, issueLng)
         return distance <= 1000 // 1000 meters
       }

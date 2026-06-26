@@ -624,17 +624,12 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
             </div>
 
-          </div>
-
-          {/* RIGHT COLUMN: Search, Filters, and Feed */}
-          <div className="lg:col-span-2 space-y-6">
-
-            {/* "Your Community Needs You" Section */}
+            {/* "Your Community Needs You" Section (Moved to Left Column) */}
             {profile?.home_location && nearbyReviews.length > 0 && (
-              <div className="bg-card border border-border rounded-2xl p-4 space-y-4 mb-6 shadow-[0_0_15px_rgba(245,158,11,0.1)] border-amber-500/20">
+              <div className="bg-card border border-border rounded-2xl p-4 space-y-4 shadow-[0_0_15px_rgba(245,158,11,0.1)] border-amber-500/20">
                 <div className="flex items-center gap-2 mb-2">
                   <ShieldCheck className="w-5 h-5 text-amber-500" />
-                  <h2 className="text-base font-bold text-foreground">Your Community Needs You</h2>
+                  <h2 className="text-base font-bold text-foreground">Community Review</h2>
                   <Badge variant="outline" className="bg-amber-500/10 text-amber-500 border-amber-500/30 text-[10px] ml-auto">
                     {nearbyReviews.length} Pending
                   </Badge>
@@ -642,14 +637,20 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                 <div className="space-y-4">
                   {nearbyReviews.map(review => (
                     <div key={review.id} className="p-4 rounded-xl bg-background/50 border border-border flex flex-col gap-3">
-                      <div className="flex justify-between items-start">
+                      {review.photo_url && (
+                        <div className="w-full h-32 rounded-lg overflow-hidden border border-border mb-1">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={review.photo_url} alt="Issue" className="w-full h-full object-cover" />
+                        </div>
+                      )}
+                      <div className="flex justify-between items-start gap-2">
                         <div>
-                          <h4 className="font-semibold text-sm">{review.title}</h4>
+                          <h4 className="font-semibold text-sm leading-tight">{review.title}</h4>
                           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{review.description}</p>
                         </div>
                         {review.credibility_score !== null && (
-                          <Badge variant="outline" className="bg-background text-[10px]">
-                            AI Score: {review.credibility_score}/10
+                          <Badge variant="outline" className="bg-background text-[10px] shrink-0">
+                            Score: {review.credibility_score}/10
                           </Badge>
                         )}
                       </div>
@@ -659,22 +660,22 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                           <span className="text-muted-foreground">{review.reasoning}</span>
                         </div>
                       )}
-                      <div className="flex gap-2 mt-2">
+                      <div className="flex gap-2 mt-1">
                         <Button 
                           onClick={() => handleVote(review.id, true)} 
                           size="sm" 
                           variant="outline" 
-                          className="flex-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-400 border-emerald-500/30"
+                          className="flex-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-400 border-emerald-500/30 text-[11px] h-8"
                         >
-                          <CheckCircle2 className="w-4 h-4 mr-2" /> Confirm
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Confirm
                         </Button>
                         <Button 
                           onClick={() => handleVote(review.id, false)} 
                           size="sm" 
                           variant="outline" 
-                          className="flex-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400 border-rose-500/30"
+                          className="flex-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400 border-rose-500/30 text-[11px] h-8"
                         >
-                          <AlertCircle className="w-4 h-4 mr-2" /> Deny
+                          <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Deny
                         </Button>
                       </div>
                     </div>
@@ -682,6 +683,11 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                 </div>
               </div>
             )}
+
+          </div>
+
+          {/* RIGHT COLUMN: Search, Filters, and Feed */}
+          <div className="lg:col-span-2 space-y-6">
 
             {/* Feed Controls Header */}
             <div className="bg-card border border-border rounded-2xl p-4 space-y-4">

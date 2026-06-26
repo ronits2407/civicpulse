@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/db/server'
 
-export async function POST(req: NextRequest, { params }: { params: { issueId: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ issueId: string }> }) {
   try {
-    const issueId = params.issueId
+    const { issueId } = await params
     const body = await req.json()
     const { userId, verdict, comment, distanceMeters } = body
 

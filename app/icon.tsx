@@ -15,20 +15,39 @@ export default function Icon() {
     (
       <div
         style={{
-          fontSize: 24,
-          background: 'black',
+          background: '#0d1117',
           width: '100%',
           height: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'white',
-          borderRadius: '20%', // Slight rounding for a modern feel
-          fontWeight: 800,
-          fontFamily: 'sans-serif',
+          borderRadius: '24%',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
         }}
       >
-        A
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 32 32"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M4 16h4l4-9 5 18 4-13 3 4h4"
+            stroke="#2f81f7"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <circle
+            cx="12"
+            cy="7"
+            r="3.5"
+            fill="#2da44e"
+            stroke="#0d1117"
+            strokeWidth="1.5"
+          />
+        </svg>
       </div>
     ),
     {

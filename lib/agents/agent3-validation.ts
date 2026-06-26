@@ -73,10 +73,15 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
     const supabase = createServiceClient()
     
     console.log(`[Agent 3: Validator] Advancing pipeline stage and updating credibility score...`);
-    await supabase.from('issues').update({
-      credibility_score: validation.credibility_score / 10, // Database expects 0-1 or 0-100? Or just store directly? The frontend uses (credibility_score * 10) so the DB expects 0-1. Actually, the frontend says: selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : '91%'. Wait, if it expects 0-10, score * 10 = 0-100.
+    const { error: updateError } = await supabase.from('issues').update({
+      credibility_score: validation.credibility_score,
       pipeline_stage: 'agent4_resolution'
     }).eq('id', state.reportId)
+
+    if (updateError) {
+      console.error(`[Agent 3: Validator] Database update failed:`, updateError);
+      throw new Error(`Database update failed: ${updateError.message}`);
+    }
 
     console.log(`[Agent 3: Validator] Completed successfully.`);
     return {

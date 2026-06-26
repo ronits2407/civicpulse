@@ -36,7 +36,7 @@ Historical context: ${history}
 
 Return JSON with exactly these fields:
 {
-  "civic_brief": "A single continuous string (150-200 words) containing the professional brief. Use standard text with newline characters (\\n) if needed, but DO NOT output a nested JSON object. Include Issue Summary, Location, Evidence, Urgency, Historical Context, Recommended Action, and Priority.",
+  "civic_brief": "A single continuous string (150-200 words) containing the professional brief. IMPORTANT: DO NOT use actual newlines inside this string. Use literal text '\\n' for paragraph breaks. Include Issue Summary, Location, Evidence, Urgency, Historical Context, Recommended Action, and Priority.",
   "sla_hours": integer hours to resolve,
   "sla_deadline": ISO timestamp string for deadline,
   "department_id": "${classification.department_id || 'unassigned'}"
@@ -99,12 +99,19 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     console.log(`[Agent 4: Resolution Planner] Resolution brief generated successfully.`);
     console.log(`[Agent 4: Resolution Planner] Updating issue with department ID, civic brief, and completing pipeline stage...`);
 
-    await supabase.from('issues').update({
-      department_id: resolution.department_id,
+    const finalDepartmentId = (resolution.department_id === 'unassigned' || !resolution.department_id) ? null : resolution.department_id
+
+    const { error: updateError } = await supabase.from('issues').update({
+      department_id: finalDepartmentId,
       civic_brief: resolution.civic_brief,
       sla_deadline: resolution.sla_deadline,
       pipeline_stage: 'completed'
     }).eq('id', state.reportId)
+
+    if (updateError) {
+      console.error(`[Agent 4: Resolution Planner] Database update failed:`, updateError);
+      throw new Error(`Database update failed: ${updateError.message}`);
+    }
 
     console.log(`[Agent 4: Resolution Planner] Completed successfully.`);
     return {

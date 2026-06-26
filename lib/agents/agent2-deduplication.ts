@@ -22,8 +22,10 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
 
     if (vectorError) {
       console.error('[Agent 2: Deduplicator] Error fetching vector matches:', vectorError);
-    } else if (vectorMatches && vectorMatches.length > 0) {
-      const topMatch = vectorMatches[0]
+    } else {
+      const validVectorMatches = vectorMatches?.filter((m: any) => m.id !== state.reportId) || []
+      if (validVectorMatches.length > 0) {
+        const topMatch = validVectorMatches[0]
       console.log('[Agent 2: Deduplicator] Found vector match. Cluster ID:', topMatch.cluster_id || topMatch.id);
 
       let targetClusterId = topMatch.cluster_id;
@@ -71,6 +73,7 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
         },
       }
     }
+    }
 
     console.log('[Agent 2: Deduplicator] No vector match found. Searching for proximity matches...');
     const { data: proximityMatches, error: proximityError } = await supabase.rpc('issues_within_radius', {
@@ -82,24 +85,54 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
 
     if (proximityError) {
       console.error('[Agent 2: Deduplicator] Error fetching proximity matches:', proximityError);
-    } else if (proximityMatches && proximityMatches.length > 0) {
-      const nearby = proximityMatches[0]
-      console.log('[Agent 2: Deduplicator] Found proximity match. Cluster ID:', nearby.cluster_id || nearby.id);
-      
-      await supabase.from('issues').update({ 
-        cluster_id: nearby.cluster_id || nearby.id,
-        pipeline_stage: 'completed',
-        status: 'closed'
-      }).eq('id', state.reportId)
+    } else {
+      const validProximityMatches = proximityMatches?.filter((m: any) => m.id !== state.reportId) || []
+      if (validProximityMatches.length > 0) {
+        const topProximityMatch = validProximityMatches[0]
+        console.log('[Agent 2: Deduplicator] Found proximity match. Cluster ID:', topProximityMatch.cluster_id || topProximityMatch.id);
+        
+        let targetClusterId = topProximityMatch.cluster_id;
 
-      return {
-        ...state,
-        deduplication: {
-          is_duplicate: true,
-          cluster_id: nearby.cluster_id || nearby.id,
-          existing_issue_id: nearby.id,
-          similarity_score: 0.7,
-        },
+        if (!targetClusterId) {
+          console.log(`[Agent 2: Deduplicator] No existing cluster found for proximity match. Creating new cluster...`);
+          const { data: newCluster, error: clusterError } = await supabase.from('issue_clusters').insert({
+            representative_issue_id: topProximityMatch.id,
+            issue_count: 1,
+            category: topProximityMatch.category || null
+          }).select().single();
+
+          if (clusterError) {
+            console.error(`[Agent 2: Deduplicator] Failed to create new cluster:`, clusterError);
+            throw new Error('Failed to create new cluster');
+          }
+
+          targetClusterId = newCluster.id;
+
+          // Also update the original matched issue to belong to this new cluster
+          await supabase.from('issues').update({ cluster_id: targetClusterId }).eq('id', topProximityMatch.id);
+        }
+
+        console.log(`[Agent 2: Deduplicator] Updating current issue ${state.reportId} as duplicate (completed)...`);
+        const { error: updateError } = await supabase.from('issues').update({ 
+          cluster_id: targetClusterId,
+          pipeline_stage: 'completed',
+          status: 'closed'
+        }).eq('id', state.reportId)
+
+        if (updateError) {
+          console.error(`[Agent 2: Deduplicator] Error updating duplicate issue:`, updateError);
+          throw new Error('Failed to update duplicate issue');
+        }
+
+        return {
+          ...state,
+          deduplication: {
+            is_duplicate: true,
+            cluster_id: targetClusterId,
+            existing_issue_id: topProximityMatch.id,
+            similarity_score: 0.7,
+          },
+        }
       }
     }
 

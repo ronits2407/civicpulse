@@ -109,7 +109,12 @@ export async function generateStructuredJSON<T>(
 
     const text = response.choices[0]?.message?.content || ''
     const clean = text.replace(/```json|```/g, '').trim()
-    return JSON.parse(clean) as T
+    try {
+      return JSON.parse(clean) as T
+    } catch (e) {
+      console.error('[AI Client] Failed to parse JSON from Ollama. Raw text:', clean)
+      throw e
+    }
   }
 
   // Default: Gemini
@@ -121,7 +126,12 @@ export async function generateStructuredJSON<T>(
   const result = await geminiModel.generateContent(prompt)
   const text = result.response.text()
   const clean = text.replace(/```json|```/g, '').trim()
-  return JSON.parse(clean) as T
+  try {
+    return JSON.parse(clean) as T
+  } catch (e) {
+    console.error('[AI Client] Failed to parse JSON from Gemini. Raw text:', clean)
+    throw e
+  }
 }
 
 /**

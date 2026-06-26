@@ -923,13 +923,17 @@ export function DashboardClient({ user, profile, initialIssues }: Props) {
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
                                   <div>
                                     <span className="text-muted-foreground font-semibold">Credibility Index:</span>
-                                    <span className="text-emerald-400 ml-1 font-bold">
-                                      {selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : '91%'}
+                                    <span className={`ml-1 font-bold ${selectedIssue.credibility_score && selectedIssue.credibility_score >= 6 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                      {selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : 'Processing...'}
                                     </span>
                                   </div>
                                   <div>
                                     <span className="text-muted-foreground font-semibold">Automatic Validation:</span>
-                                    <span className="text-emerald-400 ml-1 font-semibold">Approved (score ≥ 60%)</span>
+                                    {selectedIssue.credibility_score && selectedIssue.credibility_score >= 6 ? (
+                                      <span className="text-emerald-400 ml-1 font-semibold">Approved (score ≥ 60%)</span>
+                                    ) : (
+                                      <span className="text-amber-400 ml-1 font-semibold">Community Review Required (score &lt; 60%)</span>
+                                    )}
                                   </div>
                                 </div>
                               )}

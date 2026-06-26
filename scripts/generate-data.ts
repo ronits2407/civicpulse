@@ -56,15 +56,41 @@ async function main() {
     })
   }
 
+const regions = [
+  { state: 'Maharashtra', city: 'Mumbai', lat: 19.0760, lng: 72.8777, weight: 10 },
+  { state: 'Maharashtra', city: 'Nashik', lat: 19.9975, lng: 73.7898, weight: 5 },
+  { state: 'Delhi', city: 'New Delhi', lat: 28.7041, lng: 77.1025, weight: 9 },
+  { state: 'Karnataka', city: 'Bengaluru', lat: 12.9716, lng: 77.5946, weight: 8 },
+  { state: 'Gujarat', city: 'Ahmedabad', lat: 23.0225, lng: 72.5714, weight: 6 },
+  { state: 'Tamil Nadu', city: 'Chennai', lat: 13.0827, lng: 80.2707, weight: 6 },
+  { state: 'West Bengal', city: 'Kolkata', lat: 22.5726, lng: 88.3639, weight: 5 },
+  { state: 'Telangana', city: 'Hyderabad', lat: 17.3850, lng: 78.4867, weight: 5 },
+  { state: 'Uttar Pradesh', city: 'Lucknow', lat: 26.8467, lng: 80.9462, weight: 5 },
+  { state: 'Kerala', city: 'Kochi', lat: 9.9312, lng: 76.2673, weight: 3 },
+  { state: 'Goa', city: 'Panaji', lat: 15.4909, lng: 73.8278, weight: 2 },
+  { state: 'Assam', city: 'Guwahati', lat: 26.1445, lng: 91.7362, weight: 1 }
+]
+
+function getWeightedRegion() {
+  const totalWeight = regions.reduce((sum, r) => sum + r.weight, 0)
+  let random = Math.random() * totalWeight
+  for (const r of regions) {
+    if (random < r.weight) return r
+    random -= r.weight
+  }
+  return regions[0]
+}
+
   // 2. Generate Issues
   for (let i = 0; i < SEED_ISSUES; i++) {
     const userId = randomChoice(profiles).id
     const category = randomChoice(categories)
     const status = randomChoice(statuses)
     
-    // Slight jitter around Nashik
-    const lat = NASHIK_CENTER.lat + (Math.random() - 0.5) * 0.05
-    const lng = NASHIK_CENTER.lng + (Math.random() - 0.5) * 0.05
+    // Pick a region and apply jitter (roughly up to 10-20km radius)
+    const region = getWeightedRegion()
+    const lat = region.lat + (Math.random() - 0.5) * 0.15
+    const lng = region.lng + (Math.random() - 0.5) * 0.15
 
     issues.push({
       id: randomUUID(),
@@ -76,7 +102,7 @@ async function main() {
       is_emergency: faker.datatype.boolean({ probability: 0.1 }),
       status,
       location: `POINT(${lng} ${lat})`, // WKT format for PostGIS / CSV
-      address: faker.location.streetAddress() + ', Nashik, Maharashtra',
+      address: faker.location.streetAddress() + `, ${region.city}, ${region.state}, India`,
       ward_id: faker.number.int({ min: 1, max: 10 }),
       needs_community_verification: status === 'community_review',
       credibility_score: faker.number.int({ min: 3, max: 10 }),
@@ -86,18 +112,29 @@ async function main() {
 
   // 3. Generate Verifications
   const communityReviewIssues = issues.filter(i => i.status === 'community_review' || i.status === 'open')
+  const seenVerifications = new Set<string>()
   for (let i = 0; i < SEED_VERIFICATIONS; i++) {
     if (communityReviewIssues.length === 0) break
-    const issueId = randomChoice(communityReviewIssues).id
-    const userId = randomChoice(profiles).id
+    
+    // Try a few times to find a unique combination
+    let issueId, userId, pairKey;
+    for (let attempts = 0; attempts < 10; attempts++) {
+      issueId = randomChoice(communityReviewIssues).id
+      userId = randomChoice(profiles).id
+      pairKey = `${issueId}_${userId}`
+      if (!seenVerifications.has(pairKey)) break
+    }
 
-    verifications.push({
-      id: randomUUID(),
-      issue_id: issueId,
-      user_id: userId,
-      verdict: faker.datatype.boolean({ probability: 0.8 }),
-      created_at: faker.date.recent({ days: 10 }).toISOString(),
-    })
+    if (pairKey && !seenVerifications.has(pairKey)) {
+      seenVerifications.add(pairKey)
+      verifications.push({
+        id: randomUUID(),
+        issue_id: issueId,
+        user_id: userId,
+        verdict: faker.datatype.boolean({ probability: 0.8 }),
+        created_at: faker.date.recent({ days: 10 }).toISOString(),
+      })
+    }
   }
 
   // 4. Generate Karma Events

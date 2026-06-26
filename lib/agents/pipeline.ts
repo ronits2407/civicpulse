@@ -17,6 +17,11 @@ function shouldContinueAfterValidation(state: AgentState): string {
   return 'resolve'
 }
 
+function shouldContinueAfterClassify(state: AgentState): string {
+  if (state.error) return 'end'
+  return 'deduplicate'
+}
+
 export async function createIssuePipeline(startNode: 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'classify') {
   const workflow = new StateGraph<AgentState>({
     channels: {
@@ -30,17 +35,29 @@ export async function createIssuePipeline(startNode: 'classify' | 'deduplicate' 
       validation: { value: (x: any, y: any) => y ?? x, default: () => null },
       resolution: { value: (x: any, y: any) => y ?? x, default: () => null },
       error: { value: (x: any, y: any) => y ?? x, default: () => null },
+      imageAnalysis: { value: (x: string, y: string) => y ?? x, default: () => '' },
+      address: { value: (x: string, y: string) => y ?? x, default: () => '' },
     },
   })
 
+  workflow.addNode('router', (state) => state)
   workflow.addNode('classify', runClassifierAgent)
   workflow.addNode('deduplicate', runDeduplicationAgent)
   workflow.addNode('validate', runValidationAgent)
   workflow.addNode('resolve', runResolutionAgent)
   workflow.addNode('save', saveToDatabase)
 
-  workflow.setEntryPoint(startNode as any)
-  workflow.addEdge('classify' as any, 'deduplicate' as any)
+  workflow.setEntryPoint('router' as any)
+  workflow.addConditionalEdges('router' as any, () => startNode, {
+    classify: 'classify',
+    deduplicate: 'deduplicate',
+    validate: 'validate',
+    resolve: 'resolve',
+  } as any)
+  workflow.addConditionalEdges('classify' as any, shouldContinueAfterClassify, {
+    deduplicate: 'deduplicate',
+    end: 'save',
+  } as any)
   workflow.addConditionalEdges('deduplicate' as any, shouldContinueAfterDedup, {
     validate: 'validate',
     end: 'save',

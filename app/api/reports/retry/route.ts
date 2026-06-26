@@ -48,7 +48,9 @@ export async function POST(request: Request) {
       reportId: issueId,
       rawText: issue.description || '',
       imageUrl: issue.photo_url || null,
-      coordinates: issue.location || { lat: 0, lng: 0 },
+      imageAnalysis: (issue as any).image_analysis || '',
+      coordinates: { lat: 0, lng: 0 }, // PostGIS coords not needed for resolve/validate
+      address: issue.address || '',
       userId: issue.user_id,
       classification: issue.category ? {
         category: issue.category,
@@ -74,7 +76,6 @@ export async function POST(request: Request) {
         civic_brief: issue.civic_brief,
         sla_hours: 72,
         sla_deadline: issue.sla_deadline,
-        department_id: issue.department_id
       } : null,
       error: null
     }

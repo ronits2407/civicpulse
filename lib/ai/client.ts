@@ -122,6 +122,7 @@ export async function generateStructuredJSON<T>(
   const geminiModel = genAI.getGenerativeModel({
     model: usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash',
     systemInstruction,
+    generationConfig: { temperature: 0.1 },
   })
   const result = await geminiModel.generateContent(prompt)
   const text = result.response.text()
@@ -144,9 +145,13 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
   if (provider === 'ollama') {
     // Fetch the image and pass as base64 via OpenAI vision API
     const imageResponse = await fetch(imageUrl)
+    if (!imageResponse.ok) {
+      throw new Error(`Failed to download image from ${imageUrl}: ${imageResponse.status} ${imageResponse.statusText}`);
+    }
     const imageData = await imageResponse.arrayBuffer()
     const base64Image = Buffer.from(imageData).toString('base64')
-    const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+    let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+    if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
 
     const visionModel = process.env.OLLAMA_VISION_MODEL || 'qwen2.5vl:72b-instruct-q4_K_M'
     const client = getOllamaClient()
@@ -165,17 +170,25 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
           ],
         },
       ],
+      temperature: 0.1,
     })
 
     return response.choices[0]?.message?.content || ''
   }
 
   // Default: Gemini Flash (multimodal)
-  const model = getGeminiFlashModel()
+  const model = getGenAI().getGenerativeModel({ 
+    model: 'gemini-2.5-flash',
+    generationConfig: { temperature: 0.1 }
+  })
   const imageResponse = await fetch(imageUrl)
+  if (!imageResponse.ok) {
+    throw new Error(`Failed to download image from ${imageUrl}: ${imageResponse.status} ${imageResponse.statusText}`);
+  }
   const imageData = await imageResponse.arrayBuffer()
   const base64Image = Buffer.from(imageData).toString('base64')
-  const mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+  let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
+  if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
 
   const result = await model.generateContent([
     { inlineData: { data: base64Image, mimeType: mimeType as any } },
@@ -224,7 +237,7 @@ export async function generateText(
     if (systemInstruction) messages.push({ role: 'system', content: systemInstruction })
     messages.push({ role: 'user', content: prompt })
 
-    const response = await client.chat.completions.create({ model, messages })
+    const response = await client.chat.completions.create({ model, messages, temperature: 0.1 })
     return response.choices[0]?.message?.content || ''
   }
 
@@ -233,6 +246,7 @@ export async function generateText(
   const geminiModel = genAI.getGenerativeModel({
     model: usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash',
     ...(systemInstruction ? { systemInstruction } : {}),
+    generationConfig: { temperature: 0.1 },
   })
   const result = await geminiModel.generateContent(prompt)
   return result.response.text()

@@ -38,10 +38,9 @@ Historical context: ${history}
 
 Return JSON with exactly these fields:
 {
-  "civic_brief": "A single continuous string (150-200 words) containing the professional brief. IMPORTANT: DO NOT use actual newlines inside this string. Use literal text '\\n' for paragraph breaks. Include Issue Summary, Location, Evidence, Urgency, Historical Context, Recommended Action, and Priority.",
+  "civic_brief": "A single continuous string (150-200 words) containing the professional brief. IMPORTANT: DO NOT use actual newlines inside this string. Use literal text '\\n' for paragraph breaks. DO NOT use any double quotes (\") inside this string. Use single quotes (') if you need to quote something. Include Issue Summary, Location, Evidence, Urgency, Historical Context, Recommended Action, and Priority.",
   "sla_hours": integer hours to resolve,
-  "sla_deadline": ISO timestamp string for deadline,
-  "department_id": "${classification.department_id || 'unassigned'}"
+  "sla_deadline": ISO timestamp string for deadline
 }
 `
 
@@ -90,7 +89,7 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
         state.rawText,
         state.imageAnalysis || '',
         state.classification,
-        'Location coordinates: ' + JSON.stringify(state.coordinates),
+        state.address || 'Location recorded',
         historyContext
       ),
       RESOLUTION_SYSTEM
@@ -102,7 +101,7 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     console.log(`[Agent 4: Resolution Planner] Resolution brief generated successfully.`);
     console.log(`[Agent 4: Resolution Planner] Updating issue with department ID, civic brief, and completing pipeline stage...`);
 
-    const finalDepartmentId = (resolution.department_id === 'unassigned' || !resolution.department_id) ? null : resolution.department_id
+    const finalDepartmentId = state.classification?.department_id || null
 
     const { error: updateError } = await supabase.from('issues').update({
       department_id: finalDepartmentId,

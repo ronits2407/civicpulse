@@ -71,6 +71,9 @@ export async function runClassifierAgent(state: AgentState): Promise<AgentState>
       subcategory: classification.subcategory,
       severity: classification.severity,
       is_emergency: classification.is_emergency,
+      department_id: classification.department_id || null,
+      image_analysis: imageAnalysis || null,
+      address: state.address || null,
       pipeline_stage: 'agent2_deduplication'
     }).eq('id', state.reportId)
 

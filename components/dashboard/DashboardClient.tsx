@@ -245,9 +245,13 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
         payload => {
           if (payload.eventType === 'UPDATE') {
             const updatedIssue = payload.new as Issue
-            setIssues(prev =>
-              prev.map(i => (i.id === updatedIssue.id ? updatedIssue : i))
-            )
+            setIssues(prev => {
+              const exists = prev.some(i => i.id === updatedIssue.id)
+              if (exists) {
+                return prev.map(i => (i.id === updatedIssue.id ? updatedIssue : i))
+              }
+              return [updatedIssue, ...prev]
+            })
             // Update selected issue if it's currently open
             setSelectedIssue(prev => (prev?.id === updatedIssue.id ? updatedIssue : prev))
             
@@ -257,7 +261,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
           }
           if (payload.eventType === 'INSERT') {
             const newIssue = payload.new as Issue
-            setIssues(prev => [newIssue, ...prev])
+            setIssues(prev => {
+              if (prev.some(i => i.id === newIssue.id)) return prev
+              return [newIssue, ...prev]
+            })
             
             toast.success('New Issue Registered', {
               description: `"${newIssue.title || 'Your report'}" has been successfully processed by the AI pipeline.`,

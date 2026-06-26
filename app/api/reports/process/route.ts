@@ -44,12 +44,14 @@ export async function POST(req: NextRequest) {
       rawText: text,
       imageUrl: imageUrl || null,
       coordinates,
+      address: coordinates.address || '',
       userId,
       classification: null,
       deduplication: null,
       validation: null,
       resolution: null,
       error: null,
+      imageAnalysis: '',
     }
 
     // Run asynchronously in the background using Next.js after()

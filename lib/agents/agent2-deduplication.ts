@@ -22,6 +22,7 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
 
     if (vectorError) {
       console.error('[Agent 2: Deduplicator] Error fetching vector matches:', vectorError);
+      throw new Error(`Vector match error: ${vectorError.message}`);
     } else {
       const validVectorMatches = vectorMatches?.filter((m: any) => m.id !== state.reportId) || []
       if (validVectorMatches.length > 0) {
@@ -85,6 +86,7 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
 
     if (proximityError) {
       console.error('[Agent 2: Deduplicator] Error fetching proximity matches:', proximityError);
+      throw new Error(`Proximity match error: ${proximityError.message}`);
     } else {
       const validProximityMatches = proximityMatches?.filter((m: any) => m.id !== state.reportId) || []
       if (validProximityMatches.length > 0) {

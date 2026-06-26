@@ -1,5 +1,5 @@
 import { createServiceClient } from './lib/db/server';
-import { createIssuePipeline } from './lib/agents/pipeline';
+import { runClassifierAgent } from './lib/agents/agent1-classifier';
 import fs from 'fs';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
@@ -24,10 +24,10 @@ async function main() {
     .from('issue-media')
     .getPublicUrl(upload.path);
   const imageUrl = urlData.publicUrl;
+  console.log("Uploaded to:", imageUrl);
 
   const { data: profile } = await supabase.from('profiles').select('id').limit(1).single();
   const dummyUserId = profile?.id;
-
   const { data: issue, error: issueError } = await supabase.from('issues').insert({
     user_id: dummyUserId,
     description: 'A test report for image analysis',
@@ -38,7 +38,12 @@ async function main() {
     pipeline_stage: 'agent1_classifier'
   }).select().single();
 
-  const initialState = {
+  if (issueError) {
+    console.error("Issue creation failed:", issueError);
+    return;
+  }
+
+  const state = {
     reportId: issue.id,
     rawText: 'A test report for image analysis',
     imageUrl: imageUrl,
@@ -49,18 +54,16 @@ async function main() {
     validation: null,
     resolution: null,
     error: null,
-    imageAnalysis: ''
   };
 
-  const pipeline = await createIssuePipeline();
-  console.log("Invoking pipeline...");
-  const finalState = await pipeline.invoke(initialState);
-  console.log("Pipeline finished.");
-  
-  if (finalState.resolution?.civic_brief) {
-    console.log("Brief:", finalState.resolution.civic_brief);
+  console.log("Running Agent 1...");
+  const result = await runClassifierAgent(state);
+  console.log("Agent 1 Result:", JSON.stringify(result, null, 2));
+
+  if (result.imageAnalysis) {
+    console.log("SUCCESS: Image Analysis was generated!");
   } else {
-    console.log("No civic brief found in final state.", finalState);
+    console.log("FAILURE: No image analysis.");
   }
 }
 

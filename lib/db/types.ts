@@ -79,6 +79,7 @@ export interface AgentState {
   imageUrl: string | null
   coordinates: { lat: number; lng: number }
   userId: string
+  address?: string
   classification: ClassificationResult | null
   deduplication: DeduplicationResult | null
   validation: ValidationResult | null
@@ -114,5 +115,4 @@ export interface ResolutionResult {
   civic_brief: string
   sla_hours: number
   sla_deadline: string
-  department_id: string
 }

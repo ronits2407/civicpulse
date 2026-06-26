@@ -24,8 +24,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Issue not found' }, { status: 404 })
     }
 
-    if (!issue.pipeline_stage?.endsWith('_failed')) {
-      return NextResponse.json({ error: 'Issue is not in a failed state' }, { status: 400 })
+    if (!issue.pipeline_stage?.endsWith('_failed') && issue.pipeline_stage !== 'agent4_resolution') {
+      return NextResponse.json({ error: 'Issue is not in a failed or resumable state' }, { status: 400 })
     }
 
     // 2. Determine start node

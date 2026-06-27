@@ -389,7 +389,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
       })
       if (!res.ok) throw new Error('Failed to post comment')
       const data = await res.json()
-      setComments([...comments, { ...data.comment, profiles: profile }])
+      setComments([...comments, { ...data.comment, profiles: { ...profile, full_name: user.user_metadata?.full_name, avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture } }])
       setNewComment('')
     } catch (error: any) {
       toast.error(error.message)
@@ -1316,9 +1316,8 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                       <p className="text-xs text-muted-foreground text-center py-4">No comments yet. Be the first to add one.</p>
                     ) : (
                       comments.map(c => {
-                        // Use the currently logged-in user's avatar if they are the author
                         const isMe = c.user_id === user.id;
-                        const avatarUrl = isMe ? (user.user_metadata?.avatar_url || user.user_metadata?.picture) : null;
+                        const avatarUrl = c.profiles?.avatar_url || (isMe ? (user.user_metadata?.avatar_url || user.user_metadata?.picture) : null);
                         
                         return (
                           <div key={c.id} className="flex gap-3">

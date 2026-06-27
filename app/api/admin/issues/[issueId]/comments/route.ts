@@ -33,7 +33,28 @@ export async function GET(
 
     if (error) throw error
 
-    return NextResponse.json({ comments: data })
+    // Fetch user metadata for avatars and names
+    const uniqueUserIds = [...new Set(data.map((c: any) => c.user_id))]
+    const usersData = await Promise.all(
+      uniqueUserIds.map(id => serviceClient.auth.admin.getUserById(id))
+    )
+    const userMetaMap: Record<string, any> = {}
+    for (const { data: userData } of usersData) {
+      if (userData?.user) {
+        userMetaMap[userData.user.id] = userData.user.user_metadata
+      }
+    }
+
+    const enrichedComments = data.map((c: any) => ({
+      ...c,
+      profiles: {
+        ...c.profiles,
+        full_name: userMetaMap[c.user_id]?.full_name,
+        avatar_url: userMetaMap[c.user_id]?.avatar_url || userMetaMap[c.user_id]?.picture
+      }
+    }))
+
+    return NextResponse.json({ comments: enrichedComments })
   } catch (error: any) {
     console.error('Fetch comments error:', error)
     return NextResponse.json(

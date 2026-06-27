@@ -54,6 +54,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { IssueMapPanel } from './IssueMapPanel'
 import { Agent2MapVisuals } from './Agent2MapVisuals'
+import { CitizenLeaderboardPanel } from './CitizenLeaderboardPanel'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -299,6 +300,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
   const [isFetchingReviews, setIsFetchingReviews] = useState(false)
   const [voteTally, setVoteTally] = useState<{ confirms: number; denies: number } | null>(null)
   const [isMapOpen, setIsMapOpen] = useState(false)
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   // Get user's geolocation once on mount for the map center
@@ -676,13 +678,25 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
             {/* Map View Button */}
             <Button
-              onClick={() => setIsMapOpen(true)}
+              onClick={() => { setIsMapOpen(true); setIsLeaderboardOpen(false); setSelectedIssue(null); }}
               variant="outline"
               className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group"
             >
               <div className="flex items-center justify-center gap-2">
                 <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
                 <span className="text-sm font-semibold">View Issue Map</span>
+              </div>
+            </Button>
+
+            {/* Leaderboard Button */}
+            <Button
+              onClick={() => { setIsLeaderboardOpen(true); setIsMapOpen(false); setSelectedIssue(null); }}
+              variant="outline"
+              className="w-full border-border bg-card hover:bg-muted hover:border-amber-500/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group mt-3"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Award className="w-4 h-4 text-muted-foreground group-hover:text-amber-500 transition-colors" />
+                <span className="text-sm font-semibold">Show Leaderboard</span>
               </div>
             </Button>
 
@@ -1426,6 +1440,13 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
         userLocation={userLocation}
+      />
+
+      {/* Citizen Leaderboard Panel */}
+      <CitizenLeaderboardPanel
+        userId={user.id}
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
       />
     </div>
   )

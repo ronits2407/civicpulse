@@ -30,6 +30,7 @@ export interface Issue {
   address: string
   ward_id: number | null
   photo_url: string | null
+  video_url: string | null
   credibility_score: number | null
   cluster_id: string | null
   department_id: string | null
@@ -89,6 +90,7 @@ export interface AgentState {
   reportId: string
   rawText: string
   imageUrl: string | null
+  videoUrl: string | null
   coordinates: { lat: number; lng: number }
   userId: string
   address?: string

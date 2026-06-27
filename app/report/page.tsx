@@ -6,9 +6,10 @@ import { createClient } from '@/lib/db/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, Send, Loader2, Navigation, Map, CheckCircle2, X } from 'lucide-react'
+import { Camera, Send, Loader2, Navigation, Map, CheckCircle2, X, Video } from 'lucide-react'
 import { toast } from 'sonner'
 import { LocationPickerPanel } from '@/components/report/LocationPickerPanel'
+import { WebcamModal } from '@/components/report/WebcamModal'
 
 export default function ReportPage() {
   const router = useRouter()
@@ -16,10 +17,17 @@ export default function ReportPage() {
   const [text, setText] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const videoRef = useRef<HTMLInputElement>(null)
+  const [videoFile, setVideoFile] = useState<File | null>(null)
+  const [videoPreview, setVideoPreview] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [coordinates, setCoordinates] = useState<{ lat: number; lng: number; address: string } | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  
+  // Webcam state
+  const [isCameraOpen, setIsCameraOpen] = useState(false)
+  const [cameraMode, setCameraMode] = useState<'image' | 'video'>('image')
 
   // Location state
   const [locationMode, setLocationMode] = useState<'none' | 'gps' | 'map'>('none')
@@ -29,11 +37,25 @@ export default function ReportPage() {
   // ----------------------------------------------------------------
   // Image handlers
   // ----------------------------------------------------------------
-  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement> | File) {
+    const file = e instanceof File ? e : e.target.files?.[0]
     if (!file) return
     setImageFile(file)
     setImagePreview(URL.createObjectURL(file))
+  }
+
+  function handleVideoSelect(e: React.ChangeEvent<HTMLInputElement> | File) {
+    const file = e instanceof File ? e : e.target.files?.[0]
+    if (!file) return
+    
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error('Video is too large. Please select a video under 20MB.')
+      if (!(e instanceof File) && e.target) e.target.value = ''
+      return
+    }
+
+    setVideoFile(file)
+    setVideoPreview(URL.createObjectURL(file))
   }
 
   function handleDragOver(e: React.DragEvent<HTMLDivElement>) {
@@ -138,10 +160,25 @@ export default function ReportPage() {
         }
       }
 
+      let videoUrl: string | null = null
+      if (videoFile) {
+        const filename = `${user.id}/${Date.now()}-${videoFile.name}`
+        const { data: upload, error: uploadError } = await supabase.storage
+          .from('issue-media')
+          .upload(filename, videoFile)
+
+        if (uploadError) throw new Error(`Failed to upload video: ${uploadError.message}`)
+
+        if (upload) {
+          const { data: urlData } = supabase.storage.from('issue-media').getPublicUrl(upload.path)
+          videoUrl = urlData.publicUrl
+        }
+      }
+
       const response = await fetch('/api/reports/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, imageUrl, coordinates: finalCoords, userId: user.id }),
+        body: JSON.stringify({ text, imageUrl, videoUrl, coordinates: finalCoords, userId: user.id }),
       })
 
       const data = await response.json()
@@ -188,59 +225,125 @@ export default function ReportPage() {
             />
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">Upload your image</label>
-            {imagePreview ? (
-              <div className="relative rounded-xl overflow-hidden border border-border group max-w-md mx-auto">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imagePreview}
-                  alt="Issue preview"
-                  className="w-full max-h-[300px] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity duration-200">
+          {/* Media Upload */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Image Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Upload image</label>
+              {imagePreview ? (
+                <div className="flex flex-col gap-3 max-w-md mx-auto">
+                  <div className="relative rounded-xl overflow-hidden border border-border">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreview}
+                      alt="Issue preview"
+                      className="w-full max-h-[200px] object-cover"
+                    />
+                  </div>
                   <Button
                     variant="outline"
-                    className="border-border text-foreground bg-background hover:bg-muted opacity-100 shadow-xl font-semibold px-8 py-4 text-base rounded-xl"
+                    className="w-full border-red-500/50 text-red-500 hover:bg-red-500/10 font-semibold transition-colors"
                     onClick={() => { setImageFile(null); setImagePreview(null) }}
                   >
                     Remove Photo
                   </Button>
                 </div>
-              </div>
-            ) : (
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Upload a photo"
-                onClick={() => fileRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault()
-                    fileRef.current?.click()
-                  }
-                }}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-                className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 group/upload ${
-                  isDragging
-                    ? 'border-[#0969da] bg-[#0969da]/10'
-                    : 'border-border hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none'
-                }`}
-              >
-                <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center group-hover/upload:scale-105 transition-transform duration-200">
-                  <Camera className="w-7 h-7 text-muted-foreground group-hover/upload:text-foreground transition-colors" />
+              ) : (
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-4 transition-all duration-200 ${
+                    isDragging
+                      ? 'border-[#0969da] bg-[#0969da]/10'
+                      : 'border-border hover:bg-muted/10'
+                  }`}
+                >
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm font-semibold text-foreground">Upload photo</span>
+                    <p className="text-xs text-muted-foreground mt-1">PNG, JPG</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row w-full gap-2 mt-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        setCameraMode('image')
+                        setIsCameraOpen(true)
+                      }}
+                    >
+                      Take Photo
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1"
+                      onClick={() => fileRef.current?.click()}
+                    >
+                      Browse
+                    </Button>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <span className="text-sm font-semibold text-[#0969da] hover:underline">Upload a photo</span>
-                  <span className="text-sm text-muted-foreground"> or drag and drop</span>
-                  <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+              )}
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+            </div>
+
+            {/* Video Upload */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-2">Upload video <span className="text-muted-foreground font-normal text-xs">(Admin only)</span></label>
+              {videoPreview ? (
+                <div className="flex flex-col gap-3 max-w-md mx-auto">
+                  <div className="relative rounded-xl overflow-hidden border border-border">
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="w-full max-h-[200px] object-cover"
+                    />
+                  </div>
+                  <Button
+                    variant="outline"
+                    className="w-full border-red-500/50 text-red-500 hover:bg-red-500/10 font-semibold transition-colors"
+                    onClick={() => { setVideoFile(null); setVideoPreview(null) }}
+                  >
+                    Remove Video
+                  </Button>
                 </div>
-              </div>
-            )}
-            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleImageSelect} />
+              ) : (
+                <div
+                  className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center gap-4 transition-all duration-200 border-border hover:bg-muted/10"
+                >
+                  <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                    <Video className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-sm font-semibold text-foreground">Upload video</span>
+                    <p className="text-xs text-muted-foreground mt-1">MP4, WebM up to 20MB</p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row w-full gap-2 mt-2">
+                    <Button 
+                      variant="outline" 
+                      className="flex-1"
+                      onClick={() => {
+                        setCameraMode('video')
+                        setIsCameraOpen(true)
+                      }}
+                    >
+                      Record
+                    </Button>
+                    <Button 
+                      variant="secondary" 
+                      className="flex-1"
+                      onClick={() => videoRef.current?.click()}
+                    >
+                      Browse
+                    </Button>
+                  </div>
+                </div>
+              )}
+              <input ref={videoRef} type="file" accept="video/*" className="hidden" onChange={handleVideoSelect} />
+            </div>
           </div>
 
           {/* Location Section */}
@@ -359,6 +462,17 @@ export default function ReportPage() {
         onClose={() => setIsMapOpen(false)}
         initialLocation={coordinates ? { lat: coordinates.lat, lng: coordinates.lng } : null}
         onConfirm={handleMapConfirm}
+      />
+
+      {/* Webcam modal */}
+      <WebcamModal
+        isOpen={isCameraOpen}
+        onClose={() => setIsCameraOpen(false)}
+        mode={cameraMode}
+        onCapture={(file) => {
+          if (cameraMode === 'image') handleImageSelect(file)
+          else handleVideoSelect(file)
+        }}
       />
     </div>
   )

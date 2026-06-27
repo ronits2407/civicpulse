@@ -7,7 +7,7 @@ import { AgentState } from '@/lib/db/types'
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { text, imageUrl, coordinates, userId } = body
+    const { text, imageUrl, videoUrl, coordinates, userId } = body
 
     if (!text || !coordinates || !userId) {
       return NextResponse.json(
@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
         user_id: userId,
         description: text,
         photo_url: imageUrl || null,
+        video_url: videoUrl || null,
         location: `POINT(${coordinates.lng} ${coordinates.lat})`,
         address: coordinates.address || '',
         status: 'open',
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       reportId: issue.id,
       rawText: text,
       imageUrl: imageUrl || null,
+      videoUrl: videoUrl || null,
       coordinates,
       address: coordinates.address || '',
       userId,

@@ -45,10 +45,12 @@ import {
   CheckSquare,
   Info,
   FileText,
-  Loader2
+  Loader2,
+  Globe
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
+import { IssueMapPanel } from '@/components/dashboard/IssueMapPanel'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -203,6 +205,20 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
   const [categoryFilter, setCategoryFilter] = useState('all') // 'all', 'infrastructure', etc.
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isRetrying, setIsRetrying] = useState(false)
+  
+  const [isMapOpen, setIsMapOpen] = useState(false)
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+
+  // Get user's geolocation once on mount for the map center
+  useEffect(() => {
+    if (typeof window !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => {} // silently fall back to Nashik center in the map component
+      )
+    }
+  }, [])
+
   
   // Admin states
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false)
@@ -477,7 +493,17 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
           {/* LEFT COLUMN: Profile & Action & Stats */}
           <div className="lg:col-span-1 space-y-6">
 
-
+            {/* Map View Button */}
+            <Button
+              onClick={() => setIsMapOpen(true)}
+              variant="outline"
+              className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group"
+            >
+              <div className="flex items-center justify-center gap-2">
+                <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
+                <span className="text-sm font-semibold">View Issue Map</span>
+              </div>
+            </Button>
 
 
             {/* Rich Statistics Overview */}
@@ -1196,6 +1222,13 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
           )
         })()}
       </Dialog>
+
+      {/* City-Wide Issue Map Panel */}
+      <IssueMapPanel
+        isOpen={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+        userLocation={userLocation}
+      />
     </div>
   )
 }

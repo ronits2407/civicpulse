@@ -6,14 +6,37 @@ const VALIDATION_SYSTEM = `You are a civic report validation agent.
 You assess credibility of citizen-reported civic issues using available evidence.
 Always respond with valid JSON only. No preamble, no explanation, no markdown.`
 
+const WEATHER_RELEVANCE_SYSTEM = `You determine if a reported civic issue might be caused or affected by weather conditions.
+Return JSON with exactly this structure, no markdown or preamble:
+{ "requires_weather_check": boolean }`
+
+const WEATHER_RELEVANCE_PROMPT = (text: string, category: string) => `
+Report: "${text}"
+Category: ${category}
+
+Does validating this issue require recent weather context (e.g. checking for heavy rain, wind, or storms)?
+`
+
 async function fetchWeatherData(lat: number, lng: number): Promise<string> {
   try {
     console.log(`[Agent 3: Validator] Fetching weather data for lat/lng: ${lat}, ${lng}...`);
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=precipitation,rain,weathercode&past_days=1`
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=precipitation,weathercode,temperature_2m,windspeed_10m&daily=precipitation_sum&past_days=3&forecast_days=1&timezone=auto`
     const response = await fetch(url)
     const data = await response.json()
+    
+    if (!data.current || !data.daily) return 'Weather data unavailable'
+
     const current = data.current
-    const weatherStr = `Current precipitation: ${current.precipitation}mm, Rain: ${current.rain}mm, Weather code: ${current.weathercode}`
+    const daily = data.daily
+    
+    // Sum past 3 days of precipitation
+    let pastRain = 0;
+    if (daily.precipitation_sum && daily.precipitation_sum.length > 0) {
+      // past_days=3 returns 4 days of data (3 past + 1 current/forecast)
+      pastRain = daily.precipitation_sum.slice(0, 3).reduce((a: number, b: number) => a + (b || 0), 0)
+    }
+
+    const weatherStr = `Current Temp: ${current.temperature_2m}°C, Wind: ${current.windspeed_10m}km/h. Precipitation (Now): ${current.precipitation}mm. Precipitation (Past 3 Days Total): ${pastRain.toFixed(1)}mm.`
     console.log(`[Agent 3: Validator] Weather data retrieved: ${weatherStr}`);
     return weatherStr;
   } catch (err) {
@@ -53,10 +76,25 @@ Return JSON with exactly these fields:
 export async function runValidationAgent(state: AgentState): Promise<AgentState> {
   console.log(`[Agent 3: Validator] Starting credibility validation for issue: ${state.issueId || state.reportId || 'unknown'}`);
   try {
-    const weather = await fetchWeatherData(
-      state.coordinates.lat,
-      state.coordinates.lng
+    console.log(`[Agent 3: Validator] Loop 1: Asking LLM if weather check is required...`);
+    const weatherCheck = await generateStructuredJSON<{ requires_weather_check: boolean }>(
+      WEATHER_RELEVANCE_PROMPT(state.rawText, state.classification?.category || 'unknown'),
+      WEATHER_RELEVANCE_SYSTEM
     )
+    
+    console.log(`[Agent 3: Validator] Loop 1 result:`, weatherCheck);
+
+    let weather = 'Not relevant to this issue type';
+    
+    if (weatherCheck.requires_weather_check) {
+      console.log(`[Agent 3: Validator] Weather context deemed necessary. Fetching...`);
+      weather = await fetchWeatherData(
+        state.coordinates.lat,
+        state.coordinates.lng
+      )
+    } else {
+      console.log(`[Agent 3: Validator] Skipping weather fetch based on LLM assessment.`);
+    }
 
     console.log(`[Agent 3: Validator] Requesting structured credibility validation from LLM...`);
     const validation = await generateStructuredJSON<ValidationResult>(

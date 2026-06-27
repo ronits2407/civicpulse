@@ -235,6 +235,27 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
     }
   }, [selectedIssue])
 
+  const [voteTally, setVoteTally] = useState<{ confirms: number; denies: number } | null>(null)
+
+  useEffect(() => {
+    if (selectedIssue?.status === 'community_review') {
+      const fetchTally = async () => {
+        try {
+          const supabase = createClient()
+          const { data } = await supabase.from('verifications').select('verdict').eq('issue_id', selectedIssue.id)
+          if (data) {
+            const confirms = data.filter(v => v.verdict).length
+            const denies = data.filter(v => !v.verdict).length
+            setVoteTally({ confirms, denies })
+          }
+        } catch (e) {}
+      }
+      fetchTally()
+    } else {
+      setVoteTally(null)
+    }
+  }, [selectedIssue])
+
   const fetchComments = async (issueId: string) => {
     try {
       const res = await fetch(`/api/admin/issues/${issueId}/comments`)
@@ -439,6 +460,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                     <AvatarImage
                       src={user.user_metadata.avatar_url || user.user_metadata.picture}
                       alt={user.user_metadata.full_name || 'User Avatar'}
+                      referrerPolicy="no-referrer"
                     />
                   )}
                   <AvatarFallback className="bg-muted text-foreground text-xs font-semibold">
@@ -1011,7 +1033,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                                     {selectedIssue.needs_community_verification === false ? (
                                       <span className="text-emerald-400 ml-1 font-semibold">Approved (by AI)</span>
                                     ) : selectedIssue.needs_community_verification === true ? (
-                                      state3 === 'done' ? (
+                                      getAgentState(selectedIssue.pipeline_stage, 'awaiting_community_review', isDuplicate) === 'done' ? (
                                         <span className="text-emerald-400 ml-1 font-semibold">Community Review Completed</span>
                                       ) : (
                                         <span className="text-amber-400 ml-1 font-semibold">Community Review Required</span>

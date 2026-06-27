@@ -493,6 +493,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     <AvatarImage
                       src={user.user_metadata.avatar_url || user.user_metadata.picture}
                       alt={user.user_metadata.full_name || 'User Avatar'}
+                      referrerPolicy="no-referrer"
                     />
                   )}
                   <AvatarFallback className="bg-muted text-foreground text-xs font-semibold">
@@ -1166,7 +1167,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                     {selectedIssue.needs_community_verification === false ? (
                                       <span className="text-emerald-400 ml-1 font-semibold">Approved (by AI)</span>
                                     ) : selectedIssue.needs_community_verification === true ? (
-                                      state3 === 'done' ? (
+                                      getAgentState(selectedIssue.pipeline_stage, 'awaiting_community_review', isDuplicate) === 'done' ? (
                                         <span className="text-emerald-400 ml-1 font-semibold">Community Review Completed</span>
                                       ) : (
                                         <span className="text-amber-400 ml-1 font-semibold">Community Review Required</span>

@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -178,8 +178,9 @@ export default function ReportPage() {
         <div className="space-y-6">
           {/* Textarea */}
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-2">Describe problem</label>
+            <label htmlFor="issue-description" className="block text-sm font-semibold text-foreground mb-2">Describe problem</label>
             <Textarea
+              id="issue-description"
               placeholder="Describe the problem... e.g. There's a large pothole on MG Road, it damaged my bike yesterday"
               value={text}
               onChange={e => setText(e.target.value)}
@@ -210,14 +211,23 @@ export default function ReportPage() {
               </div>
             ) : (
               <div
+                role="button"
+                tabIndex={0}
+                aria-label="Upload a photo"
                 onClick={() => fileRef.current?.click()}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    fileRef.current?.click()
+                  }
+                }}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
                 className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 group/upload ${
                   isDragging
                     ? 'border-[#0969da] bg-[#0969da]/10'
-                    : 'border-border hover:bg-muted/30'
+                    : 'border-border hover:bg-muted/30 focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none'
                 }`}
               >
                 <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center group-hover/upload:scale-105 transition-transform duration-200">
@@ -284,7 +294,8 @@ export default function ReportPage() {
                     type="button"
                     onClick={handleUseCurrentLocation}
                     disabled={isGettingGPS}
-                    className="group relative flex flex-col items-center gap-3 rounded-xl border border-border bg-card hover:border-[#0969da]/50 hover:bg-[#0969da]/5 transition-all duration-200 p-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Use current GPS location"
+                    className="group relative flex flex-col items-center gap-3 rounded-xl border border-border bg-card hover:border-[#0969da]/50 hover:bg-[#0969da]/5 transition-all duration-200 p-5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none"
                   >
                     <div className="w-12 h-12 rounded-full bg-[#0969da]/10 border border-[#0969da]/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
                       {isGettingGPS ? (
@@ -305,7 +316,8 @@ export default function ReportPage() {
                   <button
                     type="button"
                     onClick={() => setIsMapOpen(true)}
-                    className="group relative flex flex-col items-center gap-3 rounded-xl border border-border bg-card hover:border-[#2da44e]/50 hover:bg-[#2da44e]/5 transition-all duration-200 p-5 cursor-pointer"
+                    aria-label="Choose location on map"
+                    className="group relative flex flex-col items-center gap-3 rounded-xl border border-border bg-card hover:border-[#2da44e]/50 hover:bg-[#2da44e]/5 transition-all duration-200 p-5 cursor-pointer focus-visible:ring-2 focus-visible:ring-[#2da44e] focus-visible:outline-none"
                   >
                     <div className="w-12 h-12 rounded-full bg-[#2da44e]/10 border border-[#2da44e]/20 flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
                       <Map className="w-5 h-5 text-[#2da44e]" />

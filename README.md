@@ -1,4 +1,4 @@
-﻿# CivicPulse 🏙️
+# CivicPulse 🏙️
 An AI-powered civic issue reporting platform for Indian cities. Built to solve urban challenges by empowering citizens to report civic problems, which are then autonomously classified, deduplicated, validated, routed, and enriched by five localized LangGraph AI agents.
 
 ## 🚀 The Vision
@@ -41,6 +41,11 @@ Civic problems—potholes, sanitation issues, broken streetlights—often go unr
 * A robust Faker.js script that populates the database with synthetic users, profiles, issues, verifications, and karma events.
 * Distributes issues across 12 major Indian regions (Mumbai, Delhi, Bengaluru, etc.) using weighted probabilities and geographical jitter (10-20km radius).
 * Emits a seed.sql file designed for conflict-free ON CONFLICT DO UPDATE execution in the Supabase SQL editor to bypass CSV upload limitations and auth triggers.
+
+### 5. Accessibility (a11y)
+* **Keyboard Navigation:** Fully supports keyboard traversal (`Tab`, `Enter`, `Space`) for interactive elements like custom drag-and-drop zones, filter tabs, and issue cards.
+* **Semantic ARIA Roles:** Includes `aria-label`, `role="tab"`, `aria-pressed`, and properly linked form labels (`htmlFor`) to optimize the screen reader experience.
+* **Live Regions:** Uses `aria-live="polite"` regions to seamlessly announce real-time background AI pipeline stage updates to assistive technologies.
 
 ---
 

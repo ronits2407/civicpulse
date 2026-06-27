@@ -605,7 +605,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
               {/* Status Segment Tabs */}
               <div className="w-full">
                 {/* Status Segment Control */}
-                <div className="flex bg-background/60 p-1 rounded-xl border border-border/80 items-center">
+                <div role="tablist" aria-label="Status Filters" className="flex bg-background/60 p-1 rounded-xl border border-border/80 items-center">
                   {[
                     { id: 'all', label: 'All Reports' },
                     { id: 'active', label: 'Active Only' },
@@ -613,8 +613,10 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                   ].map(tab => (
                     <button
                       key={tab.id}
+                      role="tab"
+                      aria-selected={statusFilter === tab.id}
                       onClick={() => setStatusFilter(tab.id)}
-                      className={`flex-1 text-center text-[10px] font-semibold py-1.5 rounded-lg transition-all ${statusFilter === tab.id
+                      className={`flex-1 text-center text-[10px] font-semibold py-1.5 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none ${statusFilter === tab.id
                           ? 'bg-card text-[#0969da] border border-slate-850 shadow-sm'
                           : 'text-muted-foreground hover:text-muted-foreground'
                         }`}
@@ -626,10 +628,11 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
               </div>
 
               {/* Scrollable Category Filter Pills */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+              <div role="group" aria-label="Category Filters" className="flex items-center gap-2 overflow-x-auto pb-1.5 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
                 <button
+                  aria-pressed={categoryFilter === 'all'}
                   onClick={() => setCategoryFilter('all')}
-                  className={`text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${categoryFilter === 'all'
+                  className={`text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none ${categoryFilter === 'all'
                       ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
                       : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
                     }`}
@@ -642,8 +645,9 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                   return (
                     <button
                       key={key}
+                      aria-pressed={isActive}
                       onClick={() => setCategoryFilter(key)}
-                      className={`flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap ${isActive
+                      className={`flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none ${isActive
                           ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
                           : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
                         }`}
@@ -722,8 +726,17 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                         layout
                       >
                         <Card
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`View issue: ${issue.title || 'Untitled'}`}
                           onClick={() => setSelectedIssue(issue)}
-                          className="bg-card border-border hover:bg-muted transition-all duration-200 cursor-pointer relative overflow-hidden group/card"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setSelectedIssue(issue)
+                            }
+                          }}
+                          className="bg-card border-border hover:bg-muted transition-all duration-200 cursor-pointer relative overflow-hidden group/card focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none"
                         >
                           {/* Left Border Category Accent */}
                           <div className={`absolute left-0 top-0 bottom-0 w-1 ${cat.color.replace('text-', 'bg-')}`} />
@@ -813,6 +826,10 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
           return (
             <DialogContent className="bg-background border-border text-foreground w-[95vw] max-w-5xl sm:max-w-5xl overflow-y-auto max-h-[85vh] p-0 rounded-2xl shadow-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
               <div className="p-8">
+                {/* Screen Reader Announcement for live updates */}
+                <div aria-live="polite" aria-atomic="true" className="sr-only">
+                  {`Issue status: ${selectedIssue.status}. Pipeline stage: ${selectedIssue.pipeline_stage ? selectedIssue.pipeline_stage.replace(/_/g, ' ') : 'Not started'}`}
+                </div>
 
                 {/* Header Information (Top Row) */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">

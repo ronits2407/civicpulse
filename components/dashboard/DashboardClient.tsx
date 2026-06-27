@@ -47,10 +47,12 @@ import {
   FileText,
   Loader2,
   Globe,
+  AlertTriangle,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { IssueMapPanel } from './IssueMapPanel'
+import { Agent2MapVisuals } from './Agent2MapVisuals'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -1200,22 +1202,38 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 Scanned localized pgvector database within a 200-meter radius to prevent duplicate reports.
                               </p>
-                              {state2 === 'done' && (
-                                <div className="bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
-                                  {selectedIssue.cluster_id ? (
-                                    <p className="text-muted-foreground font-medium flex items-start gap-1.5">
-                                      <Database className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                                      <span>
-                                        This issue matches an existing report in our system. We have automatically aggregated it with the original report to prioritize its resolution.
-                                      </span>
-                                    </p>
-                                  ) : (
-                                    <p className="text-emerald-400 font-semibold flex items-center gap-1.5">
-                                      <ShieldCheck className="w-3.5 h-3.5" /> Checked unique report. No duplicate entries detected within range.
-                                    </p>
-                                  )}
-                                </div>
-                              )}
+
+                              <Agent2MapVisuals issue={selectedIssue} allIssues={issues} agentState={state2}>
+                                {state2 === 'done' && (
+                                  <div className="bg-card/30 p-2.5 rounded-lg border border-border mt-3 text-[10.5px]">
+                                    {selectedIssue.cluster_id ? (
+                                      <>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                                          <span className="font-semibold text-amber-400">Duplicate Detected</span>
+                                        </div>
+                                        <p className="text-muted-foreground leading-relaxed">
+                                          This issue has been clustered with an existing report in this vicinity.
+                                          <br />
+                                          <span className="text-muted-foreground/70 font-mono text-[9px] mt-1 block">
+                                            Cluster ID: {selectedIssue.cluster_id.slice(0, 8)}...
+                                          </span>
+                                        </p>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <div className="flex items-center gap-2 mb-1.5">
+                                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                          <span className="font-semibold text-emerald-400">Unique Report</span>
+                                        </div>
+                                        <p className="text-muted-foreground">
+                                          Checked unique report. No duplicate entries detected within range.
+                                        </p>
+                                      </>
+                                    )}
+                                  </div>
+                                )}
+                              </Agent2MapVisuals>
                             </div>
                           </div>
                         )

@@ -1203,7 +1203,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                 Scanned localized pgvector database within a 200-meter radius to prevent duplicate reports.
                               </p>
 
-                              <Agent2MapVisuals issue={selectedIssue} allIssues={issues} agentState={state2}>
+                              <Agent2MapVisuals key={selectedIssue.id} issue={selectedIssue} allIssues={issues} agentState={state2}>
                                 {state2 === 'done' && (
                                   <div className="bg-card/30 p-2.5 rounded-lg border border-border mt-3 text-[10.5px]">
                                     {selectedIssue.cluster_id ? (

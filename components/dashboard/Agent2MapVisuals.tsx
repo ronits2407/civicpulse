@@ -24,7 +24,7 @@ interface Props {
 
 export function Agent2MapVisuals({ issue, allIssues, agentState, children }: Props) {
   const [showAnimation, setShowAnimation] = useState(false)
-  const [timerFinished, setTimerFinished] = useState(false)
+  const [timerFinished, setTimerFinished] = useState(() => agentState === 'done')
 
   useEffect(() => {
     if ((agentState === 'in_progress' || agentState === 'done') && !showAnimation) {

@@ -53,6 +53,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
 import { IssueMapPanel } from '@/components/dashboard/IssueMapPanel'
+import { RoutePlannerPanel } from '@/components/admin/RoutePlannerPanel'
+import { Navigation } from 'lucide-react'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -295,6 +297,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
   const [isRetrying, setIsRetrying] = useState(false)
   
   const [isMapOpen, setIsMapOpen] = useState(false)
+  const [isRoutePlannerOpen, setIsRoutePlannerOpen] = useState(false)
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   // Get user's geolocation once on mount for the map center
@@ -604,16 +607,28 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
           <div className="lg:col-span-1 space-y-6">
 
             {/* Map View Button */}
-            <Button
-              onClick={() => setIsMapOpen(true)}
-              variant="outline"
-              className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
-                <span className="text-sm font-semibold">View Issue Map</span>
-              </div>
-            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onClick={() => setIsMapOpen(true)}
+                variant="outline"
+                className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group px-2"
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
+                  <span className="text-xs font-semibold">View Map</span>
+                </div>
+              </Button>
+              <Button
+                onClick={() => setIsRoutePlannerOpen(true)}
+                variant="outline"
+                className="w-full border-border bg-card hover:bg-muted hover:border-[#0969da]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group px-2"
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <Navigation className="w-4 h-4 text-muted-foreground group-hover:text-[#0969da] transition-colors" />
+                  <span className="text-xs font-semibold">Route Planner</span>
+                </div>
+              </Button>
+            </div>
 
 
             {/* Rich Statistics Overview */}
@@ -1377,6 +1392,13 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
       <IssueMapPanel
         isOpen={isMapOpen}
         onClose={() => setIsMapOpen(false)}
+        userLocation={userLocation}
+      />
+
+      {/* Route Planner Panel */}
+      <RoutePlannerPanel
+        isOpen={isRoutePlannerOpen}
+        onClose={() => setIsRoutePlannerOpen(false)}
         userLocation={userLocation}
       />
     </div>

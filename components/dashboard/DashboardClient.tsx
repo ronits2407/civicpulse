@@ -196,6 +196,92 @@ interface Props {
   departments: Department[]
 }
 
+function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean }) {
+  const [spinCategory, setSpinCategory] = useState('Analyzing...')
+  const [spinSeverity, setSpinSeverity] = useState(0)
+
+  useEffect(() => {
+    if (isRunning) {
+      const categories = ['Infrastructure', 'Sanitation', 'Safety', 'Environment', 'Utility']
+      const interval = setInterval(() => {
+        setSpinCategory(categories[Math.floor(Math.random() * categories.length)])
+        setSpinSeverity(Math.floor(Math.random() * 10) + 1)
+      }, 700)
+      return () => clearInterval(interval)
+    }
+  }, [isRunning])
+
+  return (
+    <div className="mt-3 space-y-3">
+      {issue.photo_url && (
+        <div className="relative w-full h-32 sm:h-40 rounded-xl overflow-hidden border border-border bg-black/50">
+          <img src={issue.photo_url} className={`w-full h-full object-cover transition-all duration-500 ${isRunning ? 'opacity-50 grayscale' : 'opacity-100'}`} alt="Scanning" />
+          {isRunning && (
+            <>
+              <motion.div
+                animate={{ top: ['0%', '100%', '0%'] }}
+                transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+                className="absolute left-0 w-full h-[2px] bg-[#0969da] shadow-[0_0_15px_3px_rgba(9,105,218,0.8)] z-10"
+              />
+              <div className="absolute inset-0 bg-[#0969da]/10 animate-pulse mix-blend-overlay" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="bg-black/70 text-[#0969da] text-[10px] font-bold px-2 py-1 rounded border border-[#0969da]/50 uppercase tracking-widest backdrop-blur-sm flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Scanning Vision Model
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] overflow-hidden">
+        <div className="flex items-center w-[170px] shrink-0">
+          <span className="text-muted-foreground font-semibold">Subcategory:</span>
+          <span className={`ml-1 font-medium capitalize transition-colors flex ${isRunning ? 'text-[#0969da] font-mono' : 'text-muted-foreground'}`}>
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={isRunning ? spinCategory : (issue.subcategory || 'N/A')}
+                initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
+                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
+                transition={{ duration: 0.4 }}
+                className="inline-block"
+              >
+                {isRunning ? spinCategory : (issue.subcategory || 'N/A')}
+              </motion.span>
+            </AnimatePresence>
+          </span>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="text-muted-foreground font-semibold">Severity Score:</span>
+          <span className={`font-bold transition-colors flex items-center ${isRunning ? 'text-[#0969da] font-mono' : (issue.severity >= 7 ? 'text-rose-500' : issue.severity >= 4 ? 'text-amber-500' : 'text-emerald-500')}`}>
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                key={isRunning ? spinSeverity : issue.severity}
+                initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
+                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
+                transition={{ duration: 0.4 }}
+                className="inline-block"
+              >
+                {isRunning ? spinSeverity : issue.severity}
+              </motion.span>
+            </AnimatePresence>
+            <span>/10</span>
+          </span>
+          <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${isRunning ? 'bg-[#0969da]' : (issue.severity >= 7 ? 'bg-rose-500' : issue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500')}`}
+              style={{ width: `${isRunning ? spinSeverity * 10 : (issue.severity || 0) * 10}%` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function DashboardClient({ user, profile, initialIssues, departments }: Props) {
   const router = useRouter()
   const [issues, setIssues] = useState<Issue[]>(initialIssues)
@@ -1089,25 +1175,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                 Analyzed raw text/media, classified category, subcategory and mapped initial severity.
                               </p>
 
-                              {state1 === 'done' && (
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
-                                  <div>
-                                    <span className="text-muted-foreground font-semibold">Subcategory:</span>
-                                    <span className="text-muted-foreground ml-1 font-medium capitalize">{selectedIssue.subcategory || 'N/A'}</span>
-                                  </div>
-
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="text-muted-foreground font-semibold">Severity Score:</span>
-                                    <span className={`font-bold ${severity.color.split(' ')[0]}`}>{selectedIssue.severity}/10</span>
-                                    <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
-                                      <div
-                                        className={`h-full rounded-full ${selectedIssue.severity >= 7 ? 'bg-rose-500' : selectedIssue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500'
-                                          }`}
-                                        style={{ width: `${(selectedIssue.severity || 0) * 10}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
+                              {(state1 === 'done' || state1 === 'in_progress') && (
+                                <Agent1Visuals issue={selectedIssue} isRunning={state1 === 'in_progress'} />
                               )}
                             </div>
                           </div>

@@ -137,7 +137,7 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
             height: ${radiusPx * 2}px;
             border-radius: 50%;
             border: 2px solid ${colors.pin};
-            animation: radar-pulse 3s ease-out infinite;
+            animation: radar-pulse 15s ease-out infinite;
           "></div>
           <div style="
             position: absolute;
@@ -145,8 +145,8 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
             height: ${radiusPx * 2}px;
             border-radius: 50%;
             border: 2px solid ${colors.pin};
-            animation: radar-pulse 3s ease-out infinite;
-            animation-delay: 1.5s;
+            animation: radar-pulse 15s ease-out infinite;
+            animation-delay: 7.5s;
           "></div>
         </div>
       `

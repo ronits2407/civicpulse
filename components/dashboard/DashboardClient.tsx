@@ -973,6 +973,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                   alt={issue.title || 'Issue'}
                                   className="w-10 h-10 rounded-xl object-cover border border-border shadow-inner shrink-0"
                                 />
+                              ) : issue.video_url ? (
+                                <div className="w-10 h-10 rounded-xl bg-black border border-border flex items-center justify-center shrink-0 shadow-inner overflow-hidden relative">
+                                  <video src={issue.video_url} className="w-full h-full object-cover opacity-70" />
+                                </div>
                               ) : (
                                 <div className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 shadow-inner ${cat.bgColor} ${cat.borderColor}`}>
                                   <CatIcon className={`w-5 h-5 ${cat.color}`} />
@@ -1064,6 +1068,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src={selectedIssue.photo_url} alt="Issue" className="w-full h-full object-cover" />
                         </>
+                      ) : selectedIssue.video_url ? (
+                        <video src={selectedIssue.video_url} className="w-full h-full object-cover bg-black" />
                       ) : (
                         <CatIcon className={`w-7 h-7 ${cat.color}`} />
                       )}
@@ -1107,6 +1113,23 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                   <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line font-medium">
                     {selectedIssue.description}
                   </p>
+
+                  {/* Attached Media */}
+                  {(selectedIssue.photo_url || selectedIssue.video_url) && (
+                    <div className="flex flex-col sm:flex-row gap-4 mt-2">
+                      {selectedIssue.photo_url && (
+                        <div className="rounded-xl overflow-hidden border border-border sm:max-w-[50%]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={selectedIssue.photo_url} alt="Attached photo" className="w-full h-auto object-cover max-h-[300px]" />
+                        </div>
+                      )}
+                      {selectedIssue.video_url && (
+                        <div className="rounded-xl overflow-hidden border border-border bg-black sm:max-w-[50%] flex items-center justify-center">
+                          <video src={selectedIssue.video_url} controls className="w-full h-auto max-h-[300px]" />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Routing Details */}
                   <div className="bg-card/50 border border-border rounded-xl p-5 space-y-4">

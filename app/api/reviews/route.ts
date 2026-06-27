@@ -91,9 +91,10 @@ export async function GET(req: NextRequest) {
 
 
     // 1. Fetch all issues in community_review
+    // Exclude video_url to ensure privacy (only uploader and admins can see videos)
     const { data: issues, error } = await supabase
       .from('issues')
-      .select('*')
+      .select('id, title, description, category, severity, photo_url, status, created_at, user_id, credibility_score, reasoning, location, is_emergency, needs_community_verification')
       .eq('status', 'community_review')
 
     if (error) throw error

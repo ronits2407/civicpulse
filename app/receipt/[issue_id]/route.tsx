@@ -62,9 +62,9 @@ export async function GET(request: Request, props: { params: Promise<{ issue_id:
               Impact Receipt
             </div>
             <div style={{ fontSize: 32, marginBottom: 30, display: 'flex', flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
-              <span style={{ display: 'flex' }}>Your report&nbsp;</span>
-              <span style={{ color: '#0969da', fontWeight: 'bold', display: 'flex' }}>"{issue.title}"</span>
-              <span style={{ display: 'flex' }}>&nbsp;was fixed {fixTimeText}.</span>
+              <div style={{ display: 'flex' }}>Your report&nbsp;</div>
+              <div style={{ color: '#0969da', fontWeight: 'bold', display: 'flex' }}>"{issue.title}"</div>
+              <div style={{ display: 'flex' }}>{` was fixed ${fixTimeText}.`}</div>
             </div>
             <div
               style={{
@@ -77,7 +77,7 @@ export async function GET(request: Request, props: { params: Promise<{ issue_id:
                 textAlign: 'center'
               }}
             >
-              📍 {issue.address || 'Nashik'}
+              {`📍 ${issue.address || 'Nashik'}`}
             </div>
             <div
               style={{
@@ -92,9 +92,9 @@ export async function GET(request: Request, props: { params: Promise<{ issue_id:
             >
               <div style={{ fontSize: 40, marginRight: 15, display: 'flex' }}>🌟</div>
               <div style={{ fontSize: 32, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
-                <span style={{ display: 'flex' }}>You improved the city for an estimated&nbsp;</span>
-                <span style={{ color: '#f87171', fontWeight: 'bold', display: 'flex' }}>{estimatedSaved}</span>
-                <span style={{ display: 'flex' }}>&nbsp;citizens!</span>
+                <div style={{ display: 'flex' }}>You improved the city for an estimated&nbsp;</div>
+                <div style={{ color: '#f87171', fontWeight: 'bold', display: 'flex' }}>{`${estimatedSaved}`}</div>
+                <div style={{ display: 'flex' }}>&nbsp;citizens!</div>
               </div>
             </div>
             <div style={{ marginTop: 50, fontSize: 24, color: '#8b949e', display: 'flex' }}>

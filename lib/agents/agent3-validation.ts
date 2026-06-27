@@ -60,9 +60,9 @@ Current weather at location: ${weather}
 
 Consider:
 - Is the reported issue consistent with current weather? (e.g., flooding during rain = credible)
-- Does the description contain specific, verifiable details?
-- Is the severity claim proportionate to the description?
-- Are there any red flags suggesting exaggeration or false reporting?
+- Does the description contain verifiable details? (Note: Short reports like "Pothole here" are normal and should NOT be penalized for lack of detail).
+- Is the severity claim proportionate to the description? (Trust the severity unless it is obviously fake or wildly exaggerated like "volcano erupting").
+- Are there any red flags suggesting intentional spam, fake reporting, or impossible contradictions?
 
 Return JSON with exactly these fields:
 {

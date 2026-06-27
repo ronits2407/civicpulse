@@ -120,12 +120,17 @@ export function RoutePlannerPanel({ isOpen, onClose, userLocation }: Props) {
   
   // Create a display order for issues if a route is active
   let orderedIssues = selectedCluster ? [...selectedCluster.issues] : []
-  if (activeRoute && activeRoute.optimizedWaypointIndices && orderedIssues.length > 0) {
+  if (activeRoute && activeRoute.optimizedWaypointIndices && activeRoute.optimizedWaypointIndices.length > 0 && orderedIssues.length > 0) {
      const newOrder = []
      for (const idx of activeRoute.optimizedWaypointIndices) {
-       newOrder.push(orderedIssues[idx])
+       if (orderedIssues[idx] !== undefined) {
+         newOrder.push(orderedIssues[idx])
+       }
      }
-     orderedIssues = newOrder
+     // Only use newOrder if it matched everything, otherwise fallback to original to prevent missing data
+     if (newOrder.length === orderedIssues.length) {
+       orderedIssues = newOrder
+     }
   }
 
   return (

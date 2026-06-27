@@ -39,6 +39,7 @@ export interface Issue {
   civic_brief: string | null
   sla_deadline: string | null
   resolved_at: string | null
+  agent5_completed?: boolean
   created_at: string
 }
 

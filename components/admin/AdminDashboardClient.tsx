@@ -298,6 +298,11 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
   
   const [isMapOpen, setIsMapOpen] = useState(false)
   const [isRoutePlannerOpen, setIsRoutePlannerOpen] = useState(false)
+  const [isAgent5Open, setIsAgent5Open] = useState(false)
+  const [isAgent5Running, setIsAgent5Running] = useState(false)
+  const [agent5Lookback, setAgent5Lookback] = useState(180)
+  const [agent5Alerts, setAgent5Alerts] = useState<any[]>([])
+  
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
 
   // Get user's geolocation once on mount for the map center
@@ -424,6 +429,27 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
       toast.error(err.message, { id: 'retry-toast' })
     } finally {
       setIsRetrying(false)
+    }
+  }
+
+  const runAgent5 = async () => {
+    setIsAgent5Running(true)
+    const tid = toast.loading('Running Agent 5 (Predictive Analysis)...')
+    try {
+      // Pass null bbox for city-wide by default
+      const res = await fetch('/api/admin/predictive/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lookbackDays: agent5Lookback })
+      })
+      if (!res.ok) throw new Error('Agent 5 failed')
+      const data = await res.json()
+      toast.success(`Agent 5 finished! Generated ${data.count} alerts.`, { id: tid })
+      setAgent5Alerts(data.alerts || [])
+    } catch (e: any) {
+      toast.error(e.message, { id: tid })
+    } finally {
+      setIsAgent5Running(false)
     }
   }
 
@@ -599,6 +625,78 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
         </div>
       </nav>
 
+      <Dialog open={isAgent5Open} onOpenChange={setIsAgent5Open}>
+        <DialogContent 
+          className="bg-background border-border text-foreground w-[95vw] max-w-5xl sm:max-w-5xl p-0 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+          style={{ maxHeight: '85vh' }}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card/60">
+            <div className="flex items-center gap-3">
+              <div>
+                <DialogTitle className="text-sm font-bold text-foreground leading-none">
+                  Predictive Hotspot Intelligence
+                </DialogTitle>
+                <DialogDescription className="text-[11px] text-muted-foreground mt-0.5">
+                  Run Agent 5 (model) to analyze historical data and generate predictive civic alerts.
+                </DialogDescription>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6">
+            <div className="space-y-3 bg-card border border-border p-4 rounded-xl">
+              <label className="text-xs font-bold text-foreground uppercase tracking-wider">Lookback Period</label>
+              <select 
+                className="w-full bg-background border border-border rounded-lg px-3 py-2.5 text-sm font-medium text-foreground focus:ring-2 focus:ring-[#0969da]/50 focus:border-[#0969da] outline-none transition-all"
+                value={agent5Lookback}
+                onChange={(e) => setAgent5Lookback(Number(e.target.value))}
+              >
+                <option value={7}>Last 7 Days</option>
+                <option value={30}>Last 30 Days (1 Month)</option>
+                <option value={90}>Last 90 Days (3 Months)</option>
+                <option value={180}>Last 180 Days (6 Months)</option>
+              </select>
+            </div>
+            
+            <Button
+              onClick={runAgent5}
+              disabled={isAgent5Running}
+              className="w-full bg-[#0969da] hover:bg-[#0969da]/90 text-white font-bold h-12 rounded-xl transition-all shadow-sm"
+            >
+              {isAgent5Running ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Analyzing spatiotemporal clusters...</> : 'Run Predictive Agent'}
+            </Button>
+
+            {agent5Alerts.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-[#2da44e]" /> Latest Predictions
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {agent5Alerts.map((alert, idx) => (
+                    <Card key={idx} className="bg-card border-border overflow-hidden flex flex-col h-full">
+                      <div className="p-4 flex-1">
+                        <div className="flex items-center justify-between mb-3">
+                          <Badge variant="outline" className="bg-[#0969da]/10 text-[#0969da] border-[#0969da]/30 capitalize px-2 py-0.5">
+                            {alert.predicted_category}
+                          </Badge>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${alert.confidence >= 0.8 ? 'bg-rose-500/10 text-rose-500 border-rose-500/20' : alert.confidence >= 0.5 ? 'bg-amber-500/10 text-amber-500 border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'}`}>
+                            {(alert.confidence * 100).toFixed(0)}% Confidence
+                          </span>
+                        </div>
+                        <p className="text-[13px] text-muted-foreground leading-relaxed">
+                          {alert.basis_summary}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Main Content Area */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
@@ -607,7 +705,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
           <div className="lg:col-span-1 space-y-6">
 
             {/* Map View Button */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <Button
                 onClick={() => setIsMapOpen(true)}
                 variant="outline"
@@ -626,6 +724,15 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                 <div className="flex items-center justify-center gap-1.5">
                   <Navigation className="w-4 h-4 text-muted-foreground group-hover:text-[#0969da] transition-colors" />
                   <span className="text-xs font-semibold">Route Planner</span>
+                </div>
+              </Button>
+              <Button
+                onClick={() => setIsAgent5Open(true)}
+                variant="outline"
+                className="w-full border-border bg-card hover:bg-muted hover:border-amber-500/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group px-2"
+              >
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="text-xs font-semibold">Agent 5</span>
                 </div>
               </Button>
             </div>

@@ -109,9 +109,13 @@ function RouteLayer({ clusters, selectedClusterId, userLocation, activeRoute }: 
       const isSelected = cluster.id === selectedClusterId
       const opacity = isSelected ? 1 : 0.3
       
-      const orderedIssues = isSelected && activeRoute?.optimizedWaypointIndices 
-        ? activeRoute.optimizedWaypointIndices.map((i: number) => cluster.issues[i])
-        : cluster.issues
+      let orderedIssues = cluster.issues
+      if (isSelected && activeRoute?.optimizedWaypointIndices) {
+        const mapped = activeRoute.optimizedWaypointIndices.map((i: number) => cluster.issues[i]).filter(Boolean)
+        if (mapped.length === cluster.issues.length && mapped.length > 0) {
+          orderedIssues = mapped
+        }
+      }
 
       orderedIssues.forEach((issue: any, i: number) => {
         const color = getCategoryColor(issue.category)

@@ -193,7 +193,10 @@ export function RoutePlannerPanel({ isOpen, onClose, userLocation }: Props) {
                        </Button>
 
                        {activeRoute && (
-                          <div className="mt-4 p-3 bg-[#2da44e]/10 border border-[#2da44e]/20 rounded-xl space-y-2">
+                          <div className="mt-4 p-3 bg-[#2da44e]/10 border border-[#2da44e]/20 rounded-xl space-y-3">
+                             <div className="text-[10px] font-bold text-[#2da44e] uppercase tracking-wider text-center border-b border-[#2da44e]/20 pb-2">
+                               Round-Trip Route
+                             </div>
                              <div className="flex justify-between items-center text-xs font-semibold text-[#2da44e]">
                                <span>Total ETA</span>
                                <span>{Math.round(parseInt(activeRoute.duration) / 60)} mins</span>
@@ -202,6 +205,9 @@ export function RoutePlannerPanel({ isOpen, onClose, userLocation }: Props) {
                                <span>Total Distance</span>
                                <span>{(activeRoute.distanceMeters / 1000).toFixed(1)} km</span>
                              </div>
+                             <p className="text-[9px] text-[#2da44e]/80 text-center leading-tight">
+                               This route originates from your location, visits all waypoints, and returns back to your location.
+                             </p>
                           </div>
                        )}
 

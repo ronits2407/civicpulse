@@ -48,6 +48,7 @@ import {
   Loader2,
   Globe,
   AlertTriangle,
+  Share2,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -1374,6 +1375,15 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
                 {/* Footer Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-8 mt-4 border-t border-border">
+                  {selectedIssue.status === 'resolved' && (
+                    <Button
+                      onClick={() => window.open(`/receipt/${selectedIssue.id}`, '_blank')}
+                      className="w-full sm:w-auto bg-[#2da44e] hover:bg-[#2c974b] text-foreground text-xs h-10 px-6 rounded-xl flex items-center gap-2"
+                    >
+                      <Share2 className="w-4 h-4" />
+                      Share Impact Receipt
+                    </Button>
+                  )}
                   <Button
                     onClick={() => setSelectedIssue(null)}
                     className="w-full sm:w-auto bg-card border border-border hover:bg-muted text-foreground text-xs h-10 px-6 rounded-xl"

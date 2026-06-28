@@ -49,11 +49,13 @@ const VALIDATION_PROMPT = (
   text: string,
   category: string,
   severity: number,
-  weather: string
+  weather: string,
+  imageAnalysis?: string
 ) => `
 Assess the credibility of this civic issue report.
 
 Report: "${text}"
+${imageAnalysis ? `Visual Evidence Analysis: "${imageAnalysis}"\n` : ''}
 Category: ${category}
 Severity claimed: ${severity}/10
 Current weather at location: ${weather}
@@ -96,14 +98,18 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
       console.log(`[Agent 3: Validator] Skipping weather fetch based on LLM assessment.`);
     }
 
+    const validationPromptText = VALIDATION_PROMPT(
+      state.englishTranslation || state.rawText,
+      state.classification?.category || 'unknown',
+      state.classification?.severity || 5,
+      weather,
+      state.imageAnalysis
+    )
+
+    console.log(`[Agent 3: Validator] === DATA SENT TO LLM ===\n${validationPromptText}\n=================================`);
     console.log(`[Agent 3: Validator] Requesting structured credibility validation from LLM...`);
     const validation = await generateStructuredJSON<ValidationResult>(
-      VALIDATION_PROMPT(
-        state.rawText,
-        state.classification?.category || 'unknown',
-        state.classification?.severity || 5,
-        weather
-      ),
+      validationPromptText,
       VALIDATION_SYSTEM
     )
     console.log(`[Agent 3: Validator] Validation received:`, JSON.stringify(validation, null, 2));

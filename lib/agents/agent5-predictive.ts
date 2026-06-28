@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/db/server'
+import { createServiceClient } from '@/lib/db/server'
 import { generateStructuredJSON } from '@/lib/ai/client'
 import { getOptimalClusters } from '@/lib/utils/clustering'
 import wkx from 'wkx'
@@ -23,10 +23,10 @@ Your task is to analyze these issues and predict potential future problems in th
 For example, a history of 'waterlogging' in the past might indicate a high chance of 'flooding' or 'potholes' in the near future.
 You must output an array of predictions for the cluster. Each prediction should contain:
 - predicted_category: The predicted civic issue category (e.g., 'flooding', 'potholes', 'disease_outbreak').
-- confidence: A number between 0 and 1 indicating how confident you are in the prediction.
-- basis_summary: A short, concise summary (1-2 sentences) explaining the prediction based on the data. For example: "Based on 23 waterlogging reports in the last month, there is a high risk of potholes."
+- confidence: A number between 0.0 and 1.0 indicating your confidence in this prediction.
+- basis_summary: A short, 1-2 sentence explanation of WHY you are predicting this based on the historical data.
 
-Return ONLY valid JSON in this exact structure:
+Output exactly a JSON array matching this format:
 [
   {
     "predicted_category": "string",
@@ -37,7 +37,7 @@ Return ONLY valid JSON in this exact structure:
 `;
 
 export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
-  const supabase = await createServerSupabaseClient()
+  const supabase = createServiceClient()
   
   // 1. Fetch issues within lookback period
   const dateLimit = new Date();
@@ -114,8 +114,11 @@ export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
       // 5. Insert predictions into database
       for (const pred of predictions) {
         const pointWkt = `POINT(${cluster.centroid.lng} ${cluster.centroid.lat})`;
+        const address = cluster.issues.find((i: any) => i.address)?.address || null;
+        
         const alertToInsert = {
           location: pointWkt,
+          address: address,
           predicted_category: pred.predicted_category,
           confidence: pred.confidence,
           basis_summary: pred.basis_summary,

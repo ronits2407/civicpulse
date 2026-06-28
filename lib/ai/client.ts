@@ -120,7 +120,6 @@ export async function generateStructuredJSON<T>(
     config: {
       systemInstruction,
       temperature: 0.1,
-      responseMimeType: "application/json",
     },
   })
 
@@ -150,7 +149,7 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
     const imageData = await imageResponse.arrayBuffer()
     let buffer: any = Buffer.from(imageData)
     let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-
+    
     try {
       const sharp = (await import('sharp')).default
       buffer = await sharp(buffer)
@@ -162,7 +161,7 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
       console.warn('[AI Client] Sharp image optimization skipped/failed:', e)
       if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
     }
-
+    
     const base64Image = buffer.toString('base64')
 
     const visionModel = process.env.OLLAMA_VISION_MODEL || 'llava'

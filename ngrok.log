@@ -32,3 +32,26 @@ t=2026-06-28T17:39:19+0530 lvl=info msg="join connections" obj=join id=944781499
 t=2026-06-28T17:39:22+0530 lvl=info msg="join connections" obj=join id=cbb1f075586d l=[::1]:11434 r=[2600:1900:0:3905::100]:44807
 t=2026-06-28T17:53:18+0530 lvl=info msg="join connections" obj=join id=c59c58d53a6a l=[::1]:11434 r=[2600:1900:0:3901::900]:8759
 t=2026-06-28T17:53:38+0530 lvl=info msg="join connections" obj=join id=871ea8bcae98 l=[::1]:11434 r=[2600:1900:0:3901::900]:19435
+t=2026-06-28T18:10:17+0530 lvl=info msg="join connections" obj=join id=88544cb060a1 l=[::1]:11434 r=[2600:1900:0:3905::a00]:21814
+t=2026-06-28T18:10:57+0530 lvl=info msg="join connections" obj=join id=3db026fcae45 l=[::1]:11434 r=[2600:1900:0:3905::a00]:8785
+t=2026-06-28T18:11:07+0530 lvl=info msg="join connections" obj=join id=b73e6309c0df l=[::1]:11434 r=[2600:1900:0:3905::a00]:32483
+t=2026-06-28T18:11:22+0530 lvl=info msg="join connections" obj=join id=58c14918cec1 l=[::1]:11434 r=[2600:1900:0:3905::a00]:40365
+t=2026-06-28T18:11:23+0530 lvl=info msg="join connections" obj=join id=9b1cd444fb08 l=[::1]:11434 r=[2600:1900:0:3905::a00]:40345
+t=2026-06-28T18:12:22+0530 lvl=info msg="join connections" obj=join id=317a913e6f49 l=[::1]:11434 r=[2600:1900:0:3905::a00]:13680
+t=2026-06-28T18:12:49+0530 lvl=info msg="join connections" obj=join id=d9b7a4562da8 l=[::1]:11434 r=[2600:1900:0:3905::a00]:24827
+t=2026-06-28T18:12:58+0530 lvl=info msg="join connections" obj=join id=b35c8d1e3931 l=[::1]:11434 r=[2600:1900:0:3905::a00]:15411
+t=2026-06-28T18:13:13+0530 lvl=info msg="join connections" obj=join id=187be95452c4 l=[::1]:11434 r=[2600:1900:0:3905::a00]:35619
+t=2026-06-28T19:01:20+0530 lvl=eror msg="heartbeat timeout, terminating session" obj=tunnels.session obj=csess id=e8601f3770e1 clientid=2e1bb153215498036473a80eec339fe0
+t=2026-06-28T19:01:20+0530 lvl=eror msg="session closed, starting reconnect loop" obj=tunnels.session obj=csess id=f5cd1ee9f433 err="write tcp [2409:40c2:1245:d553:9932:f354:ea30:789f]:58955->[2406:da1a:e91:9302:5f2c:118e:bcf2:c8bb]:443: wsasend: An existing connection was forcibly closed by the remote host."
+t=2026-06-28T19:01:20+0530 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-06-28T19:01:21+0530 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-06-28T19:01:22+0530 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-06-28T19:06:05+0530 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-06-28T19:06:09+0530 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-06-28T19:41:43+0530 lvl=eror msg="failed to reconnect session" obj=tunnels.session err="failed to dial ngrok server with address \"connect.ngrok-agent.com:443\": dial tcp: lookup connect.ngrok-agent.com: no such host"
+t=2026-06-28T19:42:00+0530 lvl=info msg="client session established" obj=tunnels.session
+t=2026-06-28T19:42:00+0530 lvl=info msg="tunnel session started" obj=tunnels.session
+t=2026-06-28T19:42:16+0530 lvl=info msg="join connections" obj=join id=5dd7d498ecf0 l=[::1]:11434 r=[2600:1900:0:3904::a01]:53310
+t=2026-06-28T19:43:12+0530 lvl=info msg="join connections" obj=join id=7d97ff4d9abe l=[::1]:11434 r=[2600:1900:0:3904::a01]:26387
+t=2026-06-28T19:43:25+0530 lvl=info msg="join connections" obj=join id=77baa4c61691 l=[::1]:11434 r=[2600:1900:0:3904::a01]:29728
+t=2026-06-28T19:43:40+0530 lvl=info msg="join connections" obj=join id=8c8df5e8b0eb l=[::1]:11434 r=[2600:1900:0:3904::a01]:17826

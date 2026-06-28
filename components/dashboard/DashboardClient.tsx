@@ -216,6 +216,8 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
     }
   }, [isRunning])
 
+  const imageAnalysisText = issue.image_analysis;
+
   return (
     <div className="mt-3 space-y-3">
       {issue.photo_url && (
@@ -239,49 +241,58 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] overflow-hidden">
-        <div className="flex items-center w-[170px] shrink-0">
-          <span className="text-muted-foreground font-semibold">Subcategory:</span>
-          <span className={`ml-1 font-medium capitalize transition-colors flex ${isRunning ? 'text-[#0969da] font-mono' : 'text-muted-foreground'}`}>
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={isRunning ? spinCategory : (issue.subcategory || 'N/A')}
-                initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
-                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
-                transition={{ duration: 0.4 }}
-                className="inline-block"
-              >
-                {isRunning ? spinCategory : (issue.subcategory || 'N/A')}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        </div>
+      <div className="flex flex-col gap-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] overflow-hidden">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center w-[170px] shrink-0">
+            <span className="text-muted-foreground font-semibold">Subcategory:</span>
+            <span className={`ml-1 font-medium capitalize transition-colors flex ${isRunning ? 'text-[#0969da] font-mono' : 'text-muted-foreground'}`}>
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  key={isRunning ? spinCategory : (issue.subcategory || 'N/A')}
+                  initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.4 }}
+                  className="inline-block"
+                >
+                  {isRunning ? spinCategory : (issue.subcategory || 'N/A')}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground font-semibold">Severity Score:</span>
-          <span className={`font-bold transition-colors flex items-center ${isRunning ? 'text-[#0969da] font-mono' : (issue.severity >= 7 ? 'text-rose-500' : issue.severity >= 4 ? 'text-amber-500' : 'text-emerald-500')}`}>
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={isRunning ? spinSeverity : issue.severity}
-                initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
-                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
-                transition={{ duration: 0.4 }}
-                className="inline-block"
-              >
-                {isRunning ? spinSeverity : issue.severity}
-              </motion.span>
-            </AnimatePresence>
-            <span>/10</span>
-          </span>
-          <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${isRunning ? 'bg-[#0969da]' : (issue.severity >= 7 ? 'bg-rose-500' : issue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500')}`}
-              style={{ width: `${isRunning ? spinSeverity * 10 : (issue.severity || 0) * 10}%` }}
-            />
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground font-semibold">Severity Score:</span>
+            <span className={`font-bold transition-colors flex items-center ${isRunning ? 'text-[#0969da] font-mono' : (issue.severity >= 7 ? 'text-rose-500' : issue.severity >= 4 ? 'text-amber-500' : 'text-emerald-500')}`}>
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  key={isRunning ? spinSeverity : issue.severity}
+                  initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.4 }}
+                  className="inline-block"
+                >
+                  {isRunning ? spinSeverity : issue.severity}
+                </motion.span>
+              </AnimatePresence>
+              <span>/10</span>
+            </span>
+            <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${isRunning ? 'bg-[#0969da]' : (issue.severity >= 7 ? 'bg-rose-500' : issue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500')}`}
+                style={{ width: `${isRunning ? spinSeverity * 10 : (issue.severity || 0) * 10}%` }}
+              />
+            </div>
           </div>
         </div>
+
+        {imageAnalysisText && !isRunning && (
+          <div className="mt-1 border-t border-border/50 pt-2 text-muted-foreground text-[11px] italic leading-relaxed">
+            <span className="font-semibold text-[#0969da] not-italic block mb-1">Visual Analysis</span>
+            {imageAnalysisText}
+          </div>
+        )}
       </div>
     </div>
   )

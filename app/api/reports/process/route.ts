@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/db/server'
 import { createIssuePipeline } from '@/lib/agents/pipeline'
 import { generateEmbedding } from '@/lib/ai/client'
@@ -67,13 +67,13 @@ export async function POST(req: NextRequest) {
       imageAnalysis: '',
     }
 
-    // Run synchronously to prevent Cloud Run from throttling CPU after response
-    try {
-      await pipeline.invoke(initialState as any)
-    } catch (err: any) {
-      console.error('Pipeline Error:', err)
-      await supabase.from('issues').update({ pipeline_stage: 'failed', error: err.message }).eq('id', issue.id)
-    }
+    // Run asynchronously in the background using Next.js after()
+    after(() => {
+      pipeline.invoke(initialState as any).catch(async (err) => {
+        console.error('Pipeline Background Error:', err)
+        await supabase.from('issues').update({ pipeline_stage: 'failed', error: err.message }).eq('id', issue.id)
+      })
+    })
 
     return NextResponse.json({
       success: true,

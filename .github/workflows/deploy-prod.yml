@@ -35,11 +35,32 @@ jobs:
       - name: Authorize Docker push
         run: gcloud auth configure-docker asia-south1-docker.pkg.dev
 
+      - name: Inject Environment Variables
+        run: |
+          cat << 'EOF' > .env.production
+          ${{ secrets.ENV_PRODUCTION }}
+          EOF
+
       - name: Build Docker Image
-        run: docker build -t ${{ env.IMAGE }}:${{ github.sha }} .
+        run: |
+          source .env.production
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN \
+            --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY \
+            --build-arg NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+            -t ${{ env.IMAGE }}:${{ github.sha }} .
 
       - name: Push Docker Image
         run: docker push ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Generate Runtime Config
+        run: |
+          echo "Converting .env.production to cloudrun-env.yaml for deployment..."
+          awk -F '=' '{if ($1 && $2) printf "%s: \"%s\"\n", $1, $2}' .env.production > cloudrun-env.yaml
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -48,4 +69,5 @@ jobs:
           service: ${{ env.SERVICE }}
           region: ${{ env.REGION }}
           image: ${{ env.IMAGE }}:${{ github.sha }}
+          env_vars_file: cloudrun-env.yaml
           flags: '--allow-unauthenticated'

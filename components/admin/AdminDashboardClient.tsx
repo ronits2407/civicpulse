@@ -217,6 +217,8 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
     }
   }, [isRunning])
 
+  const imageAnalysisText = issue.image_analysis;
+
   return (
     <div className="mt-3 space-y-3">
       {issue.photo_url && (
@@ -240,49 +242,58 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
         </div>
       )}
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] overflow-hidden">
-        <div className="flex items-center w-[170px] shrink-0">
-          <span className="text-muted-foreground font-semibold">Subcategory:</span>
-          <span className={`ml-1 font-medium capitalize transition-colors flex ${isRunning ? 'text-[#0969da] font-mono' : 'text-muted-foreground'}`}>
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={isRunning ? spinCategory : (issue.subcategory || 'N/A')}
-                initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
-                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
-                transition={{ duration: 0.4 }}
-                className="inline-block"
-              >
-                {isRunning ? spinCategory : (issue.subcategory || 'N/A')}
-              </motion.span>
-            </AnimatePresence>
-          </span>
-        </div>
+      <div className="flex flex-col gap-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] overflow-hidden">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex items-center w-[170px] shrink-0">
+            <span className="text-muted-foreground font-semibold">Subcategory:</span>
+            <span className={`ml-1 font-medium capitalize transition-colors flex ${isRunning ? 'text-[#0969da] font-mono' : 'text-muted-foreground'}`}>
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  key={isRunning ? spinCategory : (issue.subcategory || 'N/A')}
+                  initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.4 }}
+                  className="inline-block"
+                >
+                  {isRunning ? spinCategory : (issue.subcategory || 'N/A')}
+                </motion.span>
+              </AnimatePresence>
+            </span>
+          </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-muted-foreground font-semibold">Severity Score:</span>
-          <span className={`font-bold transition-colors flex items-center ${isRunning ? 'text-[#0969da] font-mono' : (issue.severity >= 7 ? 'text-rose-500' : issue.severity >= 4 ? 'text-amber-500' : 'text-emerald-500')}`}>
-            <AnimatePresence mode="popLayout">
-              <motion.span
-                key={isRunning ? spinSeverity : issue.severity}
-                initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
-                animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
-                exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
-                transition={{ duration: 0.4 }}
-                className="inline-block"
-              >
-                {isRunning ? spinSeverity : issue.severity}
-              </motion.span>
-            </AnimatePresence>
-            <span>/10</span>
-          </span>
-          <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
-            <div
-              className={`h-full rounded-full transition-all duration-300 ${isRunning ? 'bg-[#0969da]' : (issue.severity >= 7 ? 'bg-rose-500' : issue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500')}`}
-              style={{ width: `${isRunning ? spinSeverity * 10 : (issue.severity || 0) * 10}%` }}
-            />
+          <div className="flex items-center gap-1.5">
+            <span className="text-muted-foreground font-semibold">Severity Score:</span>
+            <span className={`font-bold transition-colors flex items-center ${isRunning ? 'text-[#0969da] font-mono' : (issue.severity >= 7 ? 'text-rose-500' : issue.severity >= 4 ? 'text-amber-500' : 'text-emerald-500')}`}>
+              <AnimatePresence mode="popLayout">
+                <motion.span
+                  key={isRunning ? spinSeverity : issue.severity}
+                  initial={{ y: 15, opacity: 0, filter: 'blur(4px)' }}
+                  animate={{ y: 0, opacity: 1, filter: 'blur(0px)' }}
+                  exit={{ y: -15, opacity: 0, filter: 'blur(4px)' }}
+                  transition={{ duration: 0.4 }}
+                  className="inline-block"
+                >
+                  {isRunning ? spinSeverity : issue.severity}
+                </motion.span>
+              </AnimatePresence>
+              <span>/10</span>
+            </span>
+            <div className="w-16 bg-background rounded-full h-1.5 border border-border overflow-hidden shrink-0 ml-1">
+              <div
+                className={`h-full rounded-full transition-all duration-300 ${isRunning ? 'bg-[#0969da]' : (issue.severity >= 7 ? 'bg-rose-500' : issue.severity >= 4 ? 'bg-amber-500' : 'bg-emerald-500')}`}
+                style={{ width: `${isRunning ? spinSeverity * 10 : (issue.severity || 0) * 10}%` }}
+              />
+            </div>
           </div>
         </div>
+
+        {imageAnalysisText && !isRunning && (
+          <div className="mt-1 border-t border-border/50 pt-2 text-muted-foreground text-[11px] italic leading-relaxed">
+            <span className="font-semibold text-[#0969da] not-italic block mb-1">Visual Analysis</span>
+            {imageAnalysisText}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -646,7 +657,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="space-y-3 bg-card border border-border p-4 rounded-xl">
               <label className="text-xs font-bold text-foreground uppercase tracking-wider">Lookback Period</label>
               <select 
@@ -678,7 +689,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                   {agent5Alerts.map((alert, idx) => (
                     <Card key={idx} className="bg-card border-border overflow-hidden flex flex-col h-full">
                       <div className="p-4 flex-1">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                           <Badge variant="outline" className="bg-[#0969da]/10 text-[#0969da] border-[#0969da]/30 capitalize px-2 py-0.5">
                             {alert.predicted_category}
                           </Badge>
@@ -686,6 +697,12 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                             {(alert.confidence * 100).toFixed(0)}% Confidence
                           </span>
                         </div>
+                        {alert.address && (
+                          <div className="flex items-start gap-1 mb-2 text-muted-foreground text-[11px]">
+                            <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span className="line-clamp-2">{alert.address}</span>
+                          </div>
+                        )}
                         <p className="text-[13px] text-muted-foreground leading-relaxed">
                           {alert.basis_summary}
                         </p>
@@ -1354,7 +1371,10 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                       {/* AGENT 5: PREDICTIVE ANALYTICS */}
                       {(() => {
                         const isDuplicate = !!selectedIssue.cluster_id && selectedIssue.status === 'closed'
-                        const state5 = getAgentState(selectedIssue.pipeline_stage, 'agent5_predictive', isDuplicate)
+                        let state5: PipelineState = 'pending'
+                        if (isDuplicate) state5 = 'skipped'
+                        else if (selectedIssue.agent5_completed) state5 = 'done'
+                        
                         return (
                           <div className={`relative ${state5 === 'pending' || state5 === 'skipped' ? 'opacity-40' : ''}`}>
                             <div className={`absolute -left-[33px] top-0.5 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${state5 === 'done' ? 'bg-[#2da44e] shadow-emerald-500/30' : state5 === 'skipped' ? 'bg-slate-600 shadow-slate-500/30' : 'bg-slate-800 opacity-40'}`} />
@@ -1366,6 +1386,8 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                                 </span>
                                 {state5 === 'skipped' ? (
                                   <span className="text-[9px] font-bold text-slate-400 bg-slate-500/10 px-1.5 py-0.2 rounded border border-slate-500/20 uppercase tracking-wide leading-none">SKIPPED</span>
+                                ) : state5 === 'done' ? (
+                                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
                                 ) : (
                                   <span className="text-[9px] font-bold text-muted-foreground bg-card px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">SCHEDULED</span>
                                 )}

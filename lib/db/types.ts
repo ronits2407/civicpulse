@@ -40,6 +40,7 @@ export interface Issue {
   local_civic_brief: string | null
   original_language: string | null
   translation_trace: string | null
+  image_analysis: string | null
   sla_deadline: string | null
   resolved_at: string | null
   agent5_completed?: boolean
@@ -53,12 +54,22 @@ export interface Department {
   avg_resolution_hours: number
 }
 
+export interface IssueCluster {
+  id: string
+  representative_issue_id: string
+  issue_count: number
+  category: string
+  created_at: string
+}
+
 export interface Verification {
   id: string
   issue_id: string
   user_id: string
   verdict: boolean
   photo_url: string | null
+  comment: string | null
+  distance_meters: number | null
   created_at: string
 }
 
@@ -86,6 +97,8 @@ export interface PredictiveAlert {
   confidence: number
   prediction_date: string
   basis_summary: string
+  location?: any
+  address?: string | null
   is_actioned: boolean
   created_at: string
 }

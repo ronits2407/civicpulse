@@ -1,4 +1,4 @@
-import { analyzeImage, generateStructuredJSON, getGeminiFlashModel } from './lib/ai/client';
+import { analyzeImage, generateStructuredJSON } from './lib/ai/client';
 import fs from 'fs';
 
 async function main() {

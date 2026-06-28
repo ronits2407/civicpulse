@@ -82,7 +82,7 @@ export async function runClassifierAgent(state: AgentState): Promise<AgentState>
     return {
       ...state,
       classification,
-      imageAnalysis: imageAnalysis || undefined
+      imageAnalysis: imageAnalysis || ''
     }
   } catch (error: any) {
     console.error('[Agent 1: Classifier] Fatal error during classification:', error);

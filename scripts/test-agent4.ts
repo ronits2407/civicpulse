@@ -21,11 +21,13 @@ async function testAgent4() {
       cluster_id: null,
       existing_issue_id: null,
       similarity_score: 0,
+    },
     validation: {
       credibility_score: 8,
       reasoning: 'Reported issue consistent with current weather and contains specific details. Severity claim is proportionate to description.',
       needs_community_verification: false,
       weather_corroborated: true
+    },
     resolution: null,
     error: null,
   };

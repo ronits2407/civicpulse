@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       reportId: issueId,
       rawText: issue.description || '',
       imageUrl: issue.photo_url || null,
+      videoUrl: (issue as any).video_url || null,
       imageAnalysis: (issue as any).image_analysis || '',
       coordinates: { lat: 0, lng: 0 }, // PostGIS coords not needed for resolve/validate
       address: issue.address || '',

@@ -21,6 +21,7 @@ async function testAgent3() {
       cluster_id: null,
       existing_issue_id: null,
       similarity_score: 0,
+    },
     validation: null,
     resolution: null,
     error: null,

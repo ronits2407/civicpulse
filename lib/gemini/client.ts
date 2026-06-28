@@ -7,6 +7,4 @@ export {
   analyzeImage,
   generateEmbedding,
   generateText,
-  getGeminiFlashModel as getFlashModel,
-  getGeminiProModel as getProModel,
 } from '@/lib/ai/client'

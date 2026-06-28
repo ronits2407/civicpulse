@@ -1,5 +1,5 @@
 export type IssueCategory = 'infrastructure' | 'sanitation' | 'safety' | 'utility' | 'environment'
-export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'false_closure' | 'closed'
+export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'false_closure' | 'closed' | 'community_review'
 export type UserRole = 'citizen' | 'admin'
 
 export interface Profile {

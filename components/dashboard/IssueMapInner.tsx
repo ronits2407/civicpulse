@@ -337,7 +337,7 @@ function LocateMeControl() {
     })
     const ctrl = new LocateControl({ position: 'bottomright' }) as L.Control & { getContainer(): HTMLElement }
     ctrl.addTo(map)
-    setControlContainer(ctrl.getContainer())
+    setControlContainer(ctrl.getContainer() ?? null)
     return () => { ctrl.remove() }
   }, [map])
 

@@ -13,4 +13,4 @@ const nextConfig: NextConfig = {
   turbopack: {}, // Silences Turbopack error caused by next-pwa's webpack config injection
 };
 
-export default withPWA(nextConfig);
+export default withPWA(nextConfig as any);

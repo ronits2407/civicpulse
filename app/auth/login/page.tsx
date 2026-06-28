@@ -8,8 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { motion } from 'framer-motion'
 
 import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default function LoginPage() {
+function LoginForm() {
   const searchParams = useSearchParams()
   const role = searchParams.get('role') || 'citizen'
   
@@ -109,5 +110,17 @@ export default function LoginPage() {
         </Card>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-muted-foreground text-sm font-medium">Loading login...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

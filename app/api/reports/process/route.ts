@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse, after } from 'next/server'
 import { createServiceClient } from '@/lib/db/server'
 import { createIssuePipeline } from '@/lib/agents/pipeline'
-import { generateEmbedding } from '@/lib/gemini/client'
+import { generateEmbedding } from '@/lib/ai/client'
 import { AgentState } from '@/lib/db/types'
 
 export async function POST(req: NextRequest) {
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
 
     // Run asynchronously in the background using Next.js after()
     after(() => {
-      pipeline.invoke(initialState).catch(async (err) => {
+      pipeline.invoke(initialState as any).catch(async (err) => {
         console.error('Pipeline Background Error:', err)
         await supabase.from('issues').update({ pipeline_stage: 'failed', error: err.message }).eq('id', issue.id)
       })

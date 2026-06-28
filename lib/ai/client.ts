@@ -10,12 +10,13 @@
  *   OLLAMA_FLASH_MODEL  – model used where Gemini Flash was used (default: qwen3:30b-a3b)
  *   OLLAMA_PRO_MODEL    – model used where Gemini Pro was used   (default: qwen3:235b-a22b)
  *
- * NOTE: Embeddings always use Google's text-embedding-004 model because pgvector
- * dimensions are fixed at 768 to match that model. Changing embedding providers
- * would require re-embedding all stored vectors.
+ * NOTE: Embeddings always use Google's gemini-embedding-001 model (when provider=gemini)
+ * or Ollama's nomic-embed-text (when provider=ollama). pgvector dimensions are fixed at
+ * 768 to match these models. Changing embedding providers would require re-embedding all
+ * stored vectors.
  */
 
-import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 import OpenAI from 'openai'
 
 // ─── Provider detection ──────────────────────────────────────────────────────
@@ -28,23 +29,15 @@ function getProvider(): AIProvider {
   return 'gemini' // safe default
 }
 
-// ─── Gemini setup ────────────────────────────────────────────────────────────
+// ─── Gemini setup (@google/genai) ────────────────────────────────────────────
 
-let _genAI: GoogleGenerativeAI | null = null
-function getGenAI(): GoogleGenerativeAI {
+let _genAI: GoogleGenAI | null = null
+function getGenAI(): GoogleGenAI {
   if (!_genAI) {
     if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set')
-    _genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY)
+    _genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   }
   return _genAI
-}
-
-export function getGeminiFlashModel(): GenerativeModel {
-  return getGenAI().getGenerativeModel({ model: 'gemini-2.5-flash' })
-}
-
-export function getGeminiProModel(): GenerativeModel {
-  return getGenAI().getGenerativeModel({ model: 'gemini-2.5-pro' })
 }
 
 // ─── Ollama Cloud (OpenAI-compatible) setup ──────────────────────────────────
@@ -117,15 +110,20 @@ export async function generateStructuredJSON<T>(
     }
   }
 
-  // Default: Gemini
-  const genAI = getGenAI()
-  const geminiModel = genAI.getGenerativeModel({
-    model: usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash',
-    systemInstruction,
-    generationConfig: { temperature: 0.1 },
+  // Default: Gemini (using @google/genai SDK)
+  const ai = getGenAI()
+  const modelId = usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash'
+
+  const response = await ai.models.generateContent({
+    model: modelId,
+    contents: prompt,
+    config: {
+      systemInstruction,
+      temperature: 0.1,
+    },
   })
-  const result = await geminiModel.generateContent(prompt)
-  const text = result.response.text()
+
+  const text = response.text || ''
   const clean = text.replace(/```json|```/g, '').trim()
   try {
     return JSON.parse(clean) as T
@@ -149,7 +147,7 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
       throw new Error(`Failed to download image from ${imageUrl}: ${imageResponse.status} ${imageResponse.statusText}`);
     }
     const imageData = await imageResponse.arrayBuffer()
-    let buffer = Buffer.from(imageData)
+    let buffer: any = Buffer.from(imageData)
     let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
     
     try {
@@ -189,17 +187,15 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
     return response.choices[0]?.message?.content || ''
   }
 
-  // Default: Gemini Flash (multimodal)
-  const model = getGenAI().getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    generationConfig: { temperature: 0.1 }
-  })
+  // Default: Gemini Flash (multimodal via @google/genai)
+  const ai = getGenAI()
+
   const imageResponse = await fetch(imageUrl)
   if (!imageResponse.ok) {
     throw new Error(`Failed to download image from ${imageUrl}: ${imageResponse.status} ${imageResponse.statusText}`);
   }
   const imageData = await imageResponse.arrayBuffer()
-  let buffer = Buffer.from(imageData)
+  let buffer: any = Buffer.from(imageData)
   let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
 
   try {
@@ -216,11 +212,28 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
 
   const base64Image = buffer.toString('base64')
 
-  const result = await model.generateContent([
-    { inlineData: { data: base64Image, mimeType: mimeType as any } },
-    prompt,
-  ])
-  return result.response.text()
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          {
+            inlineData: {
+              data: base64Image,
+              mimeType: mimeType,
+            },
+          },
+          { text: prompt },
+        ],
+      },
+    ],
+    config: {
+      temperature: 0.1,
+    },
+  })
+
+  return response.text || ''
 }
 
 /**
@@ -241,9 +254,17 @@ export async function generateEmbedding(text: string): Promise<number[]> {
     return response.data[0].embedding
   }
 
-  const model = getGenAI().getGenerativeModel({ model: 'gemini-embedding-001' })
-  const result = await model.embedContent(text)
-  return result.embedding.values
+  // Default: Gemini embedding (via @google/genai)
+  const ai = getGenAI()
+  const response = await ai.models.embedContent({
+    model: 'gemini-embedding-001',
+    contents: text,
+    config: {
+      outputDimensionality: 768,
+    },
+  })
+
+  return response.embeddings![0].values!
 }
 
 /**
@@ -267,13 +288,18 @@ export async function generateText(
     return response.choices[0]?.message?.content || ''
   }
 
-  // Gemini
-  const genAI = getGenAI()
-  const geminiModel = genAI.getGenerativeModel({
-    model: usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash',
-    ...(systemInstruction ? { systemInstruction } : {}),
-    generationConfig: { temperature: 0.1 },
+  // Gemini (via @google/genai)
+  const ai = getGenAI()
+  const modelId = usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash'
+
+  const response = await ai.models.generateContent({
+    model: modelId,
+    contents: prompt,
+    config: {
+      ...(systemInstruction ? { systemInstruction } : {}),
+      temperature: 0.1,
+    },
   })
-  const result = await geminiModel.generateContent(prompt)
-  return result.response.text()
+
+  return response.text || ''
 }

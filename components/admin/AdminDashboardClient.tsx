@@ -16,7 +16,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Agent2MapVisuals } from '@/components/dashboard/Agent2MapVisuals'
-import { Issue, Profile, Department } from '@/lib/db/types'
+import { Issue, IssueStatus, Profile, Department } from '@/lib/db/types'
 import {
   Plus,
   LogOut,
@@ -198,6 +198,7 @@ interface Props {
   profile: Profile | null
   initialIssues: Issue[]
   departments: Department[]
+  unverifiedIssuesCount?: number
 }
 
 function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean }) {
@@ -1401,7 +1402,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                         disabled={isUpdatingStatus}
                         className="w-full text-xs bg-background border border-border rounded-lg p-2 focus:ring-1 focus:ring-blue-500"
                         value={selectedIssue.status}
-                        onChange={(e) => handleUpdateIssue({ status: e.target.value })}
+                        onChange={(e) => handleUpdateIssue({ status: e.target.value as IssueStatus })}
                       >
                         <option value="open">Under Review</option>
                         <option value="in_progress">In Progress</option>

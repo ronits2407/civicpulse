@@ -30,7 +30,7 @@ function shouldContinueAfterTranslate(state: AgentState): string {
 }
 
 export async function createIssuePipeline(startNode: 'translate' | 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'translate') {
-  const workflow = new StateGraph<AgentState>({
+  const workflow = new StateGraph<any>({
     channels: {
       reportId: { value: (x: string, y: string) => y ?? x, default: () => '' },
       rawText: { value: (x: string, y: string) => y ?? x, default: () => '' },
@@ -60,26 +60,26 @@ export async function createIssuePipeline(startNode: 'translate' | 'classify' | 
   workflow.addNode('save', saveToDatabase)
 
   workflow.setEntryPoint('router' as any)
-  workflow.addConditionalEdges('router' as any, () => startNode, {
+  workflow.addConditionalEdges('router' as any, (() => startNode) as any, {
     translate: 'translate',
     classify: 'classify',
     deduplicate: 'deduplicate',
     validate: 'validate',
     resolve: 'resolve',
   } as any)
-  workflow.addConditionalEdges('translate' as any, shouldContinueAfterTranslate, {
+  workflow.addConditionalEdges('translate' as any, shouldContinueAfterTranslate as any, {
     classify: 'classify',
     end: 'save',
   } as any)
-  workflow.addConditionalEdges('classify' as any, shouldContinueAfterClassify, {
+  workflow.addConditionalEdges('classify' as any, shouldContinueAfterClassify as any, {
     deduplicate: 'deduplicate',
     end: 'save',
   } as any)
-  workflow.addConditionalEdges('deduplicate' as any, shouldContinueAfterDedup, {
+  workflow.addConditionalEdges('deduplicate' as any, shouldContinueAfterDedup as any, {
     validate: 'validate',
     end: 'save',
   } as any)
-  workflow.addConditionalEdges('validate' as any, shouldContinueAfterValidation, {
+  workflow.addConditionalEdges('validate' as any, shouldContinueAfterValidation as any, {
     resolve: 'resolve',
     end: 'save',
   } as any)

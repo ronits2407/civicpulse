@@ -57,7 +57,7 @@ async function main() {
   };
 
   console.log("Running Agent 1...");
-  const result = await runClassifierAgent(state);
+  const result = await runClassifierAgent(state as any);
   console.log("Agent 1 Result:", JSON.stringify(result, null, 2));
 
   if (result.imageAnalysis) {

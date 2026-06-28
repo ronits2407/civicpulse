@@ -148,7 +148,7 @@ const getAgentState = (currentStage: string | null, targetStage: string, isDupli
     return 'skipped'
   }
 
-  const stages = ['agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'awaiting_community_review', 'agent4_resolution', 'completed']
+  const stages = ['agent0_translation', 'agent1_classifier', 'agent2_deduplication', 'agent3_validation', 'awaiting_community_review', 'agent4_resolution', 'completed']
   const cleanCurrentStage = currentStage?.replace('_failed', '') || ''
   const currentIndex = currentStage ? stages.indexOf(cleanCurrentStage) : -1
   const targetIndex = stages.indexOf(targetStage)
@@ -312,6 +312,22 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
       )
     }
   }, [])
+
+  // Auto-open issue from URL params
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const issueId = params.get('issueId')
+      if (issueId && initialIssues.length > 0) {
+        const found = initialIssues.find(i => i.id === issueId)
+        if (found) {
+          setSelectedIssue(found)
+          // Clean up URL without reloading
+          window.history.replaceState({}, '', '/dashboard')
+        }
+      }
+    }
+  }, [initialIssues])
 
   useEffect(() => {
     if (selectedIssue?.status === 'community_review') {
@@ -1196,6 +1212,44 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     </h4>
 
                     <div className="relative pl-6 border-l-2 border-border/80 space-y-7 ml-2">
+
+                      {/* AGENT 0: TRANSLATOR */}
+                      {(() => {
+                        const state0 = getAgentState(selectedIssue.pipeline_stage, 'agent0_translation')
+                        return (
+                          <div className={`relative ${state0 === 'pending' ? 'opacity-40' : ''}`}>
+                            <AgentDot state={state0} />
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-foreground flex items-center gap-1.5 leading-none">
+                                  <Globe className="w-3.5 h-3.5 text-[#0969da]" />
+                                  Agent 0: Multilingual Translator
+                                </span>
+                                <AgentStatusBadge state={state0} issueId={selectedIssue.id} onRetry={handleRetry} />
+                              </div>
+                              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                                Detects language and provides an English translation for downstream agents.
+                              </p>
+
+                              {state0 === 'done' && (
+                                <div className="bg-card/30 p-2.5 rounded-lg border border-border mt-3 text-[10px]">
+                                  <div className="flex flex-col gap-1.5">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-muted-foreground font-semibold">Language Detected:</span>
+                                      <span className="font-bold text-[#0969da] capitalize">{selectedIssue.original_language || 'English'}</span>
+                                    </div>
+                                    {selectedIssue.translation_trace && (
+                                      <div className="text-muted-foreground leading-relaxed italic">
+                                        <span className="font-semibold not-italic">Trace:</span> {selectedIssue.translation_trace}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })()}
 
                       {/* AGENT 1: CLASSIFIER */}
                       {(() => {

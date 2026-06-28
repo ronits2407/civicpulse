@@ -30,9 +30,10 @@ export async function POST(request: Request) {
 
     // 2. Determine start node
     const failedStage = issue.pipeline_stage.replace('_failed', '')
-    let startNode: 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'classify'
+    let startNode: 'translate' | 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'classify'
     
-    if (failedStage === 'agent2_deduplication') startNode = 'deduplicate'
+    if (failedStage === 'agent0_translation') startNode = 'translate'
+    else if (failedStage === 'agent2_deduplication') startNode = 'deduplicate'
     else if (failedStage === 'agent3_validation') startNode = 'validate'
     else if (failedStage === 'agent4_resolution') startNode = 'resolve'
     else startNode = 'classify'
@@ -52,6 +53,9 @@ export async function POST(request: Request) {
       coordinates: { lat: 0, lng: 0 }, // PostGIS coords not needed for resolve/validate
       address: issue.address || '',
       userId: issue.user_id,
+      originalLanguage: issue.original_language || 'English',
+      englishTranslation: issue.description || '',
+      translationTrace: issue.translation_trace || '',
       classification: issue.category ? {
         category: issue.category,
         subcategory: issue.subcategory,

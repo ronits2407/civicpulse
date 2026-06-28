@@ -37,6 +37,9 @@ export interface Issue {
   needs_community_verification: boolean | null
   reasoning: string | null
   civic_brief: string | null
+  local_civic_brief: string | null
+  original_language: string | null
+  translation_trace: string | null
   sla_deadline: string | null
   resolved_at: string | null
   agent5_completed?: boolean
@@ -88,19 +91,23 @@ export interface PredictiveAlert {
 }
 
 export interface AgentState {
+  [key: string]: any;
   reportId: string
   rawText: string
+  originalLanguage: string
+  englishTranslation: string
+  translationTrace: string
   imageUrl: string | null
   videoUrl: string | null
   coordinates: { lat: number; lng: number }
   userId: string
-  address?: string
+  address: string
   classification: ClassificationResult | null
   deduplication: DeduplicationResult | null
   validation: ValidationResult | null
   resolution: ResolutionResult | null
   error: string | null
-  imageAnalysis?: string
+  imageAnalysis: string
 }
 
 export interface ClassificationResult {
@@ -128,6 +135,7 @@ export interface ValidationResult {
 
 export interface ResolutionResult {
   civic_brief: string
+  local_civic_brief?: string
   sla_hours: number
   sla_deadline: string
 }

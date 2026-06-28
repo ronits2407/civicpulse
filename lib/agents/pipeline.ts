@@ -1,6 +1,7 @@
 import { StateGraph, END } from '@langchain/langgraph'
 import { AgentState } from '@/lib/db/types'
 import { runClassifierAgent } from './agent1-classifier'
+import { runTranslationAgent } from './agent0-translation'
 import { runDeduplicationAgent } from './agent2-deduplication'
 import { runValidationAgent } from './agent3-validation'
 import { runResolutionAgent } from './agent4-resolution'
@@ -23,12 +24,21 @@ function shouldContinueAfterClassify(state: AgentState): string {
   return 'deduplicate'
 }
 
-export async function createIssuePipeline(startNode: 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'classify') {
+function shouldContinueAfterTranslate(state: AgentState): string {
+  if (state.error) return 'end'
+  return 'classify'
+}
+
+export async function createIssuePipeline(startNode: 'translate' | 'classify' | 'deduplicate' | 'validate' | 'resolve' = 'translate') {
   const workflow = new StateGraph<AgentState>({
     channels: {
       reportId: { value: (x: string, y: string) => y ?? x, default: () => '' },
       rawText: { value: (x: string, y: string) => y ?? x, default: () => '' },
+      originalLanguage: { value: (x: string, y: string) => y ?? x, default: () => 'English' },
+      englishTranslation: { value: (x: string, y: string) => y ?? x, default: () => '' },
+      translationTrace: { value: (x: string, y: string) => y ?? x, default: () => '' },
       imageUrl: { value: (x: any, y: any) => y ?? x, default: () => null },
+      videoUrl: { value: (x: any, y: any) => y ?? x, default: () => null },
       coordinates: { value: (x: any, y: any) => y ?? x, default: () => ({ lat: 0, lng: 0 }) },
       userId: { value: (x: string, y: string) => y ?? x, default: () => '' },
       classification: { value: (x: any, y: any) => y ?? x, default: () => null },
@@ -42,6 +52,7 @@ export async function createIssuePipeline(startNode: 'classify' | 'deduplicate' 
   })
 
   workflow.addNode('router', (state) => state)
+  workflow.addNode('translate', runTranslationAgent)
   workflow.addNode('classify', runClassifierAgent)
   workflow.addNode('deduplicate', runDeduplicationAgent)
   workflow.addNode('validate', runValidationAgent)
@@ -50,10 +61,15 @@ export async function createIssuePipeline(startNode: 'classify' | 'deduplicate' 
 
   workflow.setEntryPoint('router' as any)
   workflow.addConditionalEdges('router' as any, () => startNode, {
+    translate: 'translate',
     classify: 'classify',
     deduplicate: 'deduplicate',
     validate: 'validate',
     resolve: 'resolve',
+  } as any)
+  workflow.addConditionalEdges('translate' as any, shouldContinueAfterTranslate, {
+    classify: 'classify',
+    end: 'save',
   } as any)
   workflow.addConditionalEdges('classify' as any, shouldContinueAfterClassify, {
     deduplicate: 'deduplicate',

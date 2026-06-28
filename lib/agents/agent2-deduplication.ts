@@ -6,6 +6,7 @@ const SIMILARITY_THRESHOLD = 0.85
 const PROXIMITY_METERS = 200
 
 export async function runDeduplicationAgent(state: AgentState): Promise<AgentState> {
+  const startTime = Date.now();
   console.log('[Agent 2: Deduplicator] Starting deduplication for issue:', state.issueId || state.reportId || 'unknown');
   try {
     const supabase = createServiceClient()
@@ -120,6 +121,12 @@ Return a JSON object: { "is_same_issue": boolean, "reasoning": "brief explanatio
 
       console.log(`[Agent 2: Deduplicator] Completed successfully (Duplicate detected).`);
 
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 15000) {
+        console.log(`[Agent 2: Deduplicator] Waiting for ${15000 - elapsed}ms to fulfill 15-second visual requirement...`);
+        await new Promise(resolve => setTimeout(resolve, 15000 - elapsed));
+      }
+
       return {
         ...state,
         deduplication: {
@@ -145,6 +152,12 @@ Return a JSON object: { "is_same_issue": boolean, "reasoning": "brief explanatio
     }).eq('id', state.reportId)
 
     console.log('[Agent 2: Deduplicator] Completed successfully (Not a duplicate).');
+
+    const elapsed = Date.now() - startTime;
+    if (elapsed < 15000) {
+      console.log(`[Agent 2: Deduplicator] Waiting for ${15000 - elapsed}ms to fulfill 15-second visual requirement...`);
+      await new Promise(resolve => setTimeout(resolve, 15000 - elapsed));
+    }
     return {
       ...state,
       deduplication: noDupResult,

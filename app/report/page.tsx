@@ -250,7 +250,7 @@ export default function ReportPage() {
       if (!response.ok) throw new Error(data.error)
 
       toast.success('Report Submitted', { description: 'Your report is being analyzed by our AI.' })
-      router.push('/dashboard')
+      router.push('/dashboard?issueId=' + data.issueId)
     } catch (err: any) {
       setError(err.message || 'Something went wrong')
       setIsSubmitting(false)
@@ -280,7 +280,12 @@ export default function ReportPage() {
         <div className="space-y-6">
           {/* Textarea */}
           <div>
-            <label htmlFor="issue-description" className="block text-sm font-semibold text-foreground mb-2">Describe problem</label>
+            <div className="flex items-center justify-between mb-2">
+              <label htmlFor="issue-description" className="block text-sm font-semibold text-foreground">Describe problem</label>
+              <span className="text-xs text-[#0969da] font-medium bg-[#0969da]/10 px-2 py-0.5 rounded-full flex items-center">
+                🌐 Multi-language supported
+              </span>
+            </div>
             <div className="relative">
               <Textarea
                 id="issue-description"

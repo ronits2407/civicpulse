@@ -39,8 +39,9 @@ export async function runClassifierAgent(state: AgentState): Promise<AgentState>
     }
 
     console.log('[Agent 1: Classifier] Requesting structured JSON classification from LLM...');
+    const textToClassify = state.englishTranslation || state.rawText
     const classification = await generateStructuredJSON<ClassificationResult>(
-      CLASSIFIER_PROMPT(state.rawText, imageAnalysis),
+      CLASSIFIER_PROMPT(textToClassify, imageAnalysis),
       CLASSIFIER_SYSTEM
     )
     console.log('[Agent 1: Classifier] Classification received:', classification);

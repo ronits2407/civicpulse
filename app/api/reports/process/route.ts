@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
         address: coordinates.address || '',
         status: 'open',
         embedding,
-        pipeline_stage: 'agent1_classifier'
+        pipeline_stage: 'agent0_translation'
       })
       .select()
       .single()
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     const pipeline = await createIssuePipeline()
 
-    const initialState = {
+    const initialState: AgentState = {
       reportId: issue.id,
       rawText: text,
       imageUrl: imageUrl || null,
@@ -56,6 +56,9 @@ export async function POST(req: NextRequest) {
       coordinates,
       address: coordinates.address || '',
       userId,
+      originalLanguage: 'English',
+      englishTranslation: '',
+      translationTrace: '',
       classification: null,
       deduplication: null,
       validation: null,

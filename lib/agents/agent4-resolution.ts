@@ -24,7 +24,8 @@ const BRIEF_PROMPT = (
   imageAnalysis: string,
   classification: any,
   address: string,
-  history: string
+  history: string,
+  originalLanguage?: string
 ) => `
 Draft a professional civic action brief for this issue.
 
@@ -38,7 +39,8 @@ Historical context: ${history}
 
 Return JSON with exactly these fields:
 {
-  "civic_brief": "A single continuous string (150-200 words) containing the professional brief. IMPORTANT: DO NOT use actual newlines inside this string. Use literal text '\\n' for paragraph breaks. DO NOT use any double quotes (\") inside this string. Use single quotes (') if you need to quote something. Include Issue Summary, Location, Evidence, Urgency, Historical Context, Recommended Action, and Priority.",
+  "civic_brief": "A single continuous string (150-200 words) containing the professional brief in English. IMPORTANT: DO NOT use actual newlines inside this string. Use literal text '\\n' for paragraph breaks. DO NOT use any double quotes (\\") inside this string. Use single quotes (') if you need to quote something.",
+  ${originalLanguage && originalLanguage.toLowerCase() !== 'english' && originalLanguage.toLowerCase() !== 'en' ? `"local_civic_brief": "The exact same professional brief but translated to ${originalLanguage}. Use the same formatting rules.",` : ''}
   "sla_hours": integer hours to resolve,
   "sla_deadline": ISO timestamp string for deadline
 }
@@ -86,11 +88,12 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
 
     const resolution = await generateStructuredJSON<ResolutionResult>(
       BRIEF_PROMPT(
-        state.rawText,
+        state.englishTranslation || state.rawText,
         state.imageAnalysis || '',
         state.classification,
         state.address || 'Location recorded',
-        historyContext
+        historyContext,
+        state.originalLanguage
       ),
       RESOLUTION_SYSTEM
     )
@@ -106,6 +109,7 @@ export async function runResolutionAgent(state: AgentState): Promise<AgentState>
     const { error: updateError } = await supabase.from('issues').update({
       department_id: finalDepartmentId,
       civic_brief: resolution.civic_brief,
+      local_civic_brief: resolution.local_civic_brief || null,
       sla_deadline: resolution.sla_deadline,
       pipeline_stage: 'completed'
     }).eq('id', state.reportId)

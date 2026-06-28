@@ -40,6 +40,9 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Install vips-dev required by sharp on Alpine Linux
+RUN apk add --no-cache vips-dev
+
 # Copy built output
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./

@@ -46,12 +46,12 @@ function getCategoryColor(cat: string) {
 // ------------------------------------------------------------------
 function makePinIcon(category: string, count?: number, status?: string): L.DivIcon {
   const { pin } = getCategoryColor(category)
-  const size = count ? 36 : 28
+  const size = count ? 30 : 22
   const isCommunityReview = status === 'community_review' && !count
 
   const inner = count
-    ? `<span style="color:#fff;font-size:11px;font-weight:700;line-height:1">${count}</span>`
-    : ''
+    ? `<span style="color:#fff;font-size:11px;font-weight:700;line-height:1;margin-bottom:2px;margin-left:2px">${count}</span>`
+    : `<div style="width:8px;height:8px;background:#fff;border-radius:50%;margin-bottom:2px;margin-left:2px"></div>`
 
   const glowRing = isCommunityReview
     ? `<div style="

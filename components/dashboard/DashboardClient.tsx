@@ -55,6 +55,7 @@ import { toast } from 'sonner'
 import { IssueMapPanel } from './IssueMapPanel'
 import { Agent2MapVisuals } from './Agent2MapVisuals'
 import { CitizenLeaderboardPanel } from './CitizenLeaderboardPanel'
+import { MiniMapWidget } from './MiniMapWidget'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -692,17 +693,11 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
               </div>
             </Button>
 
-            {/* Map View Button */}
-            <Button
-              onClick={() => { setIsMapOpen(true); setIsLeaderboardOpen(false); setSelectedIssue(null); }}
-              variant="outline"
-              className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group"
-            >
-              <div className="flex items-center justify-center gap-2">
-                <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
-                <span className="text-sm font-semibold">View Issue Map</span>
-              </div>
-            </Button>
+            {/* Mini Map Widget */}
+            <MiniMapWidget 
+              onOpenFullMap={() => { setIsMapOpen(true); setIsLeaderboardOpen(false); setSelectedIssue(null); }} 
+              userLocation={userLocation} 
+            />
 
             {/* Leaderboard Button */}
             <Button

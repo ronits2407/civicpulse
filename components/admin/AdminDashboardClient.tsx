@@ -55,6 +55,7 @@ import { toast } from 'sonner'
 import { IssueMapPanel } from '@/components/dashboard/IssueMapPanel'
 import { RoutePlannerPanel } from '@/components/admin/RoutePlannerPanel'
 import { Navigation } from 'lucide-react'
+import { MiniMapWidget } from '@/components/dashboard/MiniMapWidget'
 
 // Categories metadata for styling
 const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string; bgColor: string; borderColor: string }> = {
@@ -705,18 +706,13 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
           {/* LEFT COLUMN: Profile & Action & Stats */}
           <div className="lg:col-span-1 space-y-6">
 
-            {/* Map View Button */}
-            <div className="grid grid-cols-3 gap-3">
-              <Button
-                onClick={() => setIsMapOpen(true)}
-                variant="outline"
-                className="w-full border-border bg-card hover:bg-muted hover:border-[#2da44e]/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group px-2"
-              >
-                <div className="flex items-center justify-center gap-1.5">
-                  <Globe className="w-4 h-4 text-muted-foreground group-hover:text-[#2da44e] transition-colors" />
-                  <span className="text-xs font-semibold">View Map</span>
-                </div>
-              </Button>
+            {/* Mini Map Widget */}
+            <MiniMapWidget 
+              onOpenFullMap={() => setIsMapOpen(true)} 
+              userLocation={userLocation} 
+            />
+
+            <div className="grid grid-cols-2 gap-3 mt-3">
               <Button
                 onClick={() => setIsRoutePlannerOpen(true)}
                 variant="outline"
@@ -733,7 +729,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                 className="w-full border-border bg-card hover:bg-muted hover:border-amber-500/40 text-foreground font-semibold text-sm h-10 rounded-xl transition-all group px-2"
               >
                 <div className="flex items-center justify-center gap-1.5">
-                  <span className="text-xs font-semibold">Agent 5</span>
+                  <span className="text-xs font-semibold">Analyse Issues</span>
                 </div>
               </Button>
             </div>

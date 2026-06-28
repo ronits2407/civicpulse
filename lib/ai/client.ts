@@ -41,7 +41,7 @@ function getGenAI(): GoogleGenAI {
 }
 
 // Custom fetch to disable keep-alive (fixes UND_ERR_SOCKET with ngrok)
-const customFetch = (url: RequestInfo, init?: RequestInit) => {
+const customFetch = (url: any, init?: any) => {
   return fetch(url, {
     ...init,
     keepalive: false,

@@ -1,0 +1,73 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - prod
+
+env:
+  PROJECT_ID: civicpulse-500507
+  SERVICE: civicpulse
+  REGION: asia-south1
+  IMAGE: asia-south1-docker.pkg.dev/civicpulse-500507/civicpulse-repo/civicpulse
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Google Auth
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/948264080742/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+          service_account: 'github-actions-sa@civicpulse-500507.iam.gserviceaccount.com'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker asia-south1-docker.pkg.dev
+
+      - name: Inject Environment Variables
+        run: |
+          cat << 'EOF' > .env.production
+          ${{ secrets.ENV_PRODUCTION }}
+          EOF
+
+      - name: Build Docker Image
+        run: |
+          source .env.production
+          docker build \
+            --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
+            --build-arg NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
+            --build-arg NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY \
+            --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID \
+            --build-arg NEXT_PUBLIC_MAPBOX_TOKEN=$NEXT_PUBLIC_MAPBOX_TOKEN \
+            --build-arg NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY \
+            --build-arg NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL \
+            -t ${{ env.IMAGE }}:${{ github.sha }} .
+
+      - name: Push Docker Image
+        run: docker push ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Generate Runtime Config
+        run: |
+          echo "Converting .env.production to cloudrun-env.yaml for deployment..."
+          awk -F '=' '{if ($1 && $2) printf "%s: \"%s\"\n", $1, $2}' .env.production > cloudrun-env.yaml
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+          env_vars_file: cloudrun-env.yaml
+          flags: '--allow-unauthenticated'

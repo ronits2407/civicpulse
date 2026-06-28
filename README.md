@@ -1,127 +1,115 @@
-# CivicPulse 🏙️
-An AI-powered civic issue reporting platform for Indian cities. Built to solve urban challenges by empowering citizens to report civic problems, which are then autonomously classified, deduplicated, validated, routed, and enriched by five localized LangGraph AI agents.
+# 🏙️ CivicPulse — Next-Generation AI Civic Issue Intelligence Platform
 
-## 🚀 The Vision
-Civic problems—potholes, sanitation issues, broken streetlights—often go unresolved due to bureaucratic bottlenecks, duplicate reporting, and lack of actionable data. CivicPulse acts as an intelligent intermediary. It takes raw citizen reports (text + images), uses AI to validate and classify them, checks for semantic and spatial duplicates using vector databases and GIS, and generates a structured, actionable brief for the relevant civic department.
+CivicPulse is an intelligent, agentic civic issue reporting platform designed to eliminate bureaucratic bottlenecks, citizen apathy, and duplicate reporting in urban governance (specifically tailored for Indian cities like Nashik). 
 
-## 🛠️ Technology Stack
-* **Framework:** Next.js 15 (App Router, Turbopack) & React 19
-* **Language:** TypeScript
-* **Styling:** Tailwind CSS + shadcn/ui (Radix UI)
+It empowers citizens to report civic problems through an accessible interface, while an autonomous **5-Agent LangGraph AI Pipeline** handles classification, spatial deduplication, credibility validation, resolution briefing, and predictive hotspot analysis.
+
+---
+
+## 🌟 The Vision & Problem Statement
+Urban civic problems—potholes, sanitation issues, broken streetlights—often go unresolved due to lack of actionable data and duplicate reporting. CivicPulse acts as a **smart AI intermediary**. It accepts raw citizen reports (text, images, or **voice**), leverages computer vision and semantic search to understand the problem, ensures the issue isn't already reported using vector similarity and GIS spatial data, and finally hands over a highly structured, actionable brief to the relevant civic department.
+
+---
+
+## 🔥 Key Innovations (Why This Wins)
+
+We've implemented a robust set of features to maximize accessibility, agentic depth, and production-readiness.
+
+### 🎙️ Voice Reporting (Web Speech API)
+**The Feature:** True accessibility for all demographics. Citizens can simply click the microphone icon and dictate their issue (e.g., "There's a massive pothole near the central temple...").
+**The Tech:** Leverages browser-native Web Speech API to transcribe voice directly into the report description, seamlessly tying into our multi-modal submission flow.
+
+### 🌐 Multilingual Civic Reporting
+**The Feature:** Built for India's linguistic diversity. Reports submitted in regional languages are autonomously handled, ensuring non-English speakers aren't alienated from civic participation.
+
+### 🧠 Multi-Model AI Ecosystem
+**The Feature:** A unified AI wrapper (`lib/ai/client.ts`) that orchestrates between **Google Gemini 2.5 Flash / Pro** (for lightning-fast classification and deep reasoning) and **Ollama** (for local/cloud flexible fallback). We use `text-embedding-004` for creating 768-dimensional vectors.
+
+### 🔮 Predictive Hotspot Intelligence (Agent 5)
+**The Feature:** Moving from reactive fixing to **proactive urban planning**. 
+**The UI Flow:** Inside the Admin Dashboard Map Interface, officials click the **"Analyse Issues"** button. This triggers **Agent 5 (Predictive Analysis)** using Gemini Pro. The agent analyzes historical spatiotemporal data and generates predictive alerts (e.g., "78% chance of waterlogging in Ward 4 next monsoon based on current drainage reports"). 
+
+### 🗺️ Real-Time Map Dashboard & Aesthetic UI
+**The Feature:** A breathtaking, glassmorphic UI equipped with Mapbox GL JS map rendering. 
+**The UI Flow:** Citizens and Admins see real-time map pins drop as issues are reported. We've optimized map pins to be sleek and aesthetically pleasing, significantly improving the administrative map interface's utility and visual hierarchy.
+
+---
+
+## 🤖 The 5-Agent LangGraph Pipeline
+
+When a report hits `/api/reports/process`, it enters our **LangGraph StateGraph**, moving autonomously through highly specialized AI agents:
+
+1. **Agent 1: Classifier** (Gemini 2.5 Flash Vision)
+   - Evaluates text + image evidence.
+   - Routes the issue to the correct civic department and calculates severity (1-10).
+2. **Agent 2: Deduplication** (pgvector + PostGIS)
+   - Creates a vector embedding of the report.
+   - Runs a `match_issues` Supabase RPC for semantic cosine similarity (≥ 0.85).
+   - Runs a spatial fallback via PostGIS (`issues_within_radius`) to group identical issues within a 200m radius into `issue_clusters`.
+3. **Agent 3: Validation** (Credibility Check)
+   - Cross-references claims with real-world context (e.g., checks Open-Meteo API for weather conditions). 
+   - Assigns a credibility score. (Prevents fake reporting).
+4. **Agent 4: Resolution** (Civic Action Briefs)
+   - Calculates dynamic SLA deadlines based on the urgency matrix.
+   - Generates a professional 150-200 word Civic Action Brief for the exact workers handling the issue.
+5. **Agent 5: Predictive (Admin Triggered)**
+   - Gemini Pro synthesizes macro-trends across the dataset and writes to `predictive_alerts` for long-term city planning.
+
+---
+
+## 🛠️ Production-Optimized Tech Stack
+
+* **Framework:** Next.js 16.2.9 (App Router, Turbopack)
+* **Language:** TypeScript (Strict Mode)
+* **Package Manager:** `bun`
+* **Styling:** Tailwind CSS + shadcn/ui (Radix UI, Mira theme, Slate base)
 * **Database & Auth:** Supabase (PostgreSQL, Auth, Storage)
-* **Extensions:** PostGIS (Spatial Data), pgvector (Semantic Search)
-* **AI & Orchestration:** 
-  * @langchain/langgraph & @langchain/core for agentic pipelines
-  * @google/generative-ai (Gemini 2.5 Flash / Pro)
-  * Multi-provider client wrapper supporting Ollama (local) and cloud providers
-* **Maps:** Leaflet & eact-leaflet for map rendering, Google Maps Geocoding API for address resolution.
-* **Package Manager:** un
+* **Spatial & Semantic DB:** PostGIS, pgvector
+* **AI Orchestration:** `@langchain/langgraph` + `@langchain/core`
+* **Maps:** Mapbox GL JS + Google Maps Geocoding API
+* **Deployment target:** Google Cloud Run (asia-south1) using Docker.
+
+**Codebase Health:** The repository is fully optimized for production. All redundant components, unreachable code, and scratch scripts have been aggressively pruned to ensure maximum execution efficiency and clean architecture. Test suites are modularized in the `./tests` directory.
 
 ---
 
-## ⚙️ Implemented Features & Modules
+## 🗄️ Database Architecture
 
-### 1. Authentication System
-* **Methods:** Google OAuth and Email Magic Link powered by Supabase Auth.
-* **Guard:** Next.js Middleware protects /dashboard, /report, and /admin routes.
-* **Profiles:** Auth triggers automatically provision a public.profiles row for every user, managing roles (citizen vs dmin), karma scores, and home locations.
-
-### 2. Citizen Dashboard (/dashboard)
-* **Real-time Map Visualization:** Uses Leaflet to plot active civic issues.
-* **PostGIS Decoding:** The API (/api/issues/map) actively decodes PostGIS WKB (Well-Known Binary) hex strings into GeoJSON/lat-lng objects via wkx for frontend rendering.
-* **Community Verification Tracking:** Issues flagged for community review (low AI credibility) pulse with distinct orange UI indicators on the map.
-* **GPS Integration:** "Locate Me" map control uses browser geolocation to instantly center the dashboard on the user's current location via Leaflet's lyTo mechanics.
-
-### 3. Smart Issue Reporting (/report)
-* **Map Picker:** Interactive map allowing users to drop a pin. Includes a custom-built non-blocking UI overlay and a "Locate Me" control.
-* **Address Resolution:** Reverse geocodes the dropped pin coordinates via Google Maps API.
-* **Media Uploads:** Directly uploads image evidence to the Supabase issue-media storage bucket.
-
-### 4. Synthetic Data Generation (scripts/generate-data.ts)
-* A robust Faker.js script that populates the database with synthetic users, profiles, issues, verifications, and karma events.
-* Distributes issues across 12 major Indian regions (Mumbai, Delhi, Bengaluru, etc.) using weighted probabilities and geographical jitter (10-20km radius).
-* Emits a seed.sql file designed for conflict-free ON CONFLICT DO UPDATE execution in the Supabase SQL editor to bypass CSV upload limitations and auth triggers.
-
-### 5. Accessibility (a11y)
-* **Keyboard Navigation:** Fully supports keyboard traversal (`Tab`, `Enter`, `Space`) for interactive elements like custom drag-and-drop zones, filter tabs, and issue cards.
-* **Semantic ARIA Roles:** Includes `aria-label`, `role="tab"`, `aria-pressed`, and properly linked form labels (`htmlFor`) to optimize the screen reader experience.
-* **Live Regions:** Uses `aria-live="polite"` regions to seamlessly announce real-time background AI pipeline stage updates to assistive technologies.
+* **`profiles`**: Extends auth.users. Tracks roles, karma_score.
+* **`issues`**: Core table utilizing `geography(Point, 4326)` for spatial tracking and `vector(768)` for semantic deduplication.
+* **`issue_clusters`**: Groups identical reports to prevent civic worker fatigue.
+* **`predictive_alerts`**: Stores Agent 5 insights.
+* **`karma_events`**: Immutable ledger of citizen points.
 
 ---
 
-## 🧠 AI Agent Pipeline (LangGraph)
-
-When a citizen submits a report to /api/reports/process, it enters a synchronous LangGraph StateGraph pipeline containing 4 primary AI agents.
-
-### Agent 1: Classifier (gent1-classifier.ts)
-* **Vision & Text Analysis:** Evaluates the user's text description and attached image (via Gemini 2.5 Flash Vision).
-* **Routing:** Outputs structured JSON containing the category, subcategory, severity (1-10), and emergency status.
-* **Action:** Maps the issue to the correct civic department by querying the departments table's category_scope.
-
-### Agent 2: Deduplication (gent2-deduplication.ts)
-* **Semantic Search:** Embeds the report description (	ext-embedding-004) and executes the match_issues Supabase RPC to find similar issues using cosine similarity (threshold >= 0.85).
-* **Spatial Fallback:** If no semantic match exists, it triggers the issues_within_radius PostGIS RPC to find identical category issues within a 200-meter radius.
-* **Action:** Groups duplicates into issue_clusters to prevent civic worker fatigue.
-
-### Agent 3: Validation (gent3-validation.ts)
-* **Context Gathering:** Fetches live and historical weather data for the coordinates via the Open-Meteo API.
-* **Credibility Scoring:** The AI cross-references the report claims against weather truth (e.g., "flooding" during a drought is flagged).
-* **Action:** Outputs a credibility score. If < 6, the issue is flagged with 
-eeds_community_verification, pushing it to the community verification feed.
-
-### Agent 4: Resolution (gent4-resolution.ts)
-* **Historical Context:** Retrieves the last 3 issues at the same location to provide historical awareness to civic workers.
-* **SLA Calculation:** Computes the Service Level Agreement deadline based on a category/severity urgency matrix.
-* **Action:** Generates a structured, professional 150-200 word Civic Action Brief outlining Evidence, Urgency, Context, and Recommended Action for city officials.
-
-### State Persistence (saveToDatabase)
-* The final graph node unwraps the agent state and executes the database updates via Supabase service role, persisting the classification, brief, SLA, and clustering decisions.
-
----
-
-## 🗄️ Database Schema & PostGIS
-
-* **profiles**: Extends uth.users. Tracks karma_score, ole, and ward_id.
-* **departments**: Civic departments with a category_scope array.
-* **issues**: The core table. 
-  * Uses PostGIS geography(Point, 4326) for precise spatial tracking (location column).
-  * Uses pgvector ector(768) for semantic deduplication (embedding column).
-* **issue_clusters**: Aggregates duplicate reports.
-* **erifications**: Ledger for community review. Uses a composite unique key (issue_id, user_id) to prevent duplicate voting.
-* **karma_events**: Audit log of citizen karma transactions.
-
----
-
-## 💻 Getting Started
+## 🚀 Getting Started
 
 ### 1. Prerequisites
 * [Bun](https://bun.sh/) installed.
-* A Supabase project with PostGIS and pgvector enabled.
-* API keys: Gemini, Google Maps, Mapbox.
+* Supabase project with PostGIS and pgvector enabled.
+* API Keys: Gemini, Google Maps, Mapbox.
 
-### 2. Configuration
-Create a \.env.local\ file in the root directory:
-\\\env
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-GEMINI_API_KEY=your-gemini-api-key
-GOOGLE_MAPS_API_KEY=your-google-maps-api-key
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
-NEXT_PUBLIC_MAPBOX_TOKEN=your-mapbox-token
+### 2. Environment Variables
+Create a `.env.local` file:
+```env
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+GEMINI_API_KEY=...
+GOOGLE_MAPS_API_KEY=...
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
+NEXT_PUBLIC_MAPBOX_TOKEN=...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-\\\
+```
 
-### 3. Installation & Database Setup
-\\\ash
+### 3. Quickstart
+```bash
+# Install dependencies instantly with Bun
 bun install
-# To seed the database with nationwide synthetic data:
-bun run scripts/generate-data.ts
-# (Then run the generated scripts/seed.sql in your Supabase SQL Editor)
-\\\
 
-### 4. Running Locally
-\\\ash
-bun run dev
-\\\
-Open [http://localhost:3000](http://localhost:3000) to view the application.
+# Run the Next.js Turbopack dev server
+bun dev
+```
+
+Visit `http://localhost:3000` to experience the future of civic governance!

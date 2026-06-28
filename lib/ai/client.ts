@@ -40,14 +40,6 @@ function getGenAI(): GoogleGenAI {
   return _genAI
 }
 
-// Custom fetch to disable keep-alive (fixes UND_ERR_SOCKET with ngrok)
-const customFetch = (url: RequestInfo, init?: RequestInit) => {
-  return fetch(url, {
-    ...init,
-    keepalive: false,
-  })
-}
-
 // ─── Ollama Cloud (OpenAI-compatible) setup ──────────────────────────────────
 
 let _ollamaClient: OpenAI | null = null
@@ -56,8 +48,6 @@ function getOllamaClient(): OpenAI {
     _ollamaClient = new OpenAI({
       baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
       apiKey: process.env.OLLAMA_API_KEY || 'ollama', // local ollama doesn't require a real API key
-      maxRetries: 3,
-      fetch: customFetch
     })
   }
   return _ollamaClient
@@ -69,8 +59,6 @@ function getOllamaLocalClient(): OpenAI {
     _ollamaLocalClient = new OpenAI({
       baseURL: process.env.OLLAMA_LOCAL_BASE_URL || 'http://localhost:11434/v1',
       apiKey: 'ollama', // local ollama API doesn't enforce this, but OpenAI client requires a value
-      maxRetries: 3,
-      fetch: customFetch
     })
   }
   return _ollamaLocalClient

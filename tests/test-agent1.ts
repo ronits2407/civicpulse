@@ -1,5 +1,5 @@
-import { createServiceClient } from './lib/db/server';
-import { runClassifierAgent } from './lib/agents/agent1-classifier';
+import { createServiceClient } from '../lib/db/server';
+import { runClassifierAgent } from '../lib/agents/agent1-classifier';
 import fs from 'fs';
 import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });

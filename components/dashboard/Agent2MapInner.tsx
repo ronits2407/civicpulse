@@ -122,8 +122,7 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
     }).addTo(lg)
 
     // 2. Draw the outward pulses using a custom overlay
-    // At zoom 16 near equator, 1 meter is roughly 1.3 pixels. So 200m radius = ~260px radius.
-    const radiusPx = 280; 
+    const radiusPx = 40; 
     const radarIcon = L.divIcon({
       className: 'radar-marker',
       iconSize: [0, 0],
@@ -133,20 +132,22 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
           <!-- Outward pulses -->
           <div style="
             position: absolute;
+            left: 0; top: 0;
             width: ${radiusPx * 2}px;
             height: ${radiusPx * 2}px;
             border-radius: 50%;
             border: 2px solid ${colors.pin};
-            animation: radar-pulse 15s ease-out infinite;
+            animation: radar-pulse 3s ease-out infinite;
           "></div>
           <div style="
             position: absolute;
+            left: 0; top: 0;
             width: ${radiusPx * 2}px;
             height: ${radiusPx * 2}px;
             border-radius: 50%;
             border: 2px solid ${colors.pin};
-            animation: radar-pulse 15s ease-out infinite;
-            animation-delay: 7.5s;
+            animation: radar-pulse 3s ease-out infinite;
+            animation-delay: 1.5s;
           "></div>
         </div>
       `

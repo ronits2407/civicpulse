@@ -40,8 +40,10 @@ ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Install vips-dev required by sharp on Alpine Linux
-RUN apk add --no-cache vips-dev
+# The official Next.js permanent fix for sharp in standalone Docker mode:
+# Explicitly install sharp in the runner stage so it natively pulls the Alpine linuxmusl-x64 binaries.
+ENV NEXT_SHARP_PATH=/app/node_modules/sharp
+RUN npm install sharp@0.35.2
 
 # Copy built output
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public

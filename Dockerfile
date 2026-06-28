@@ -14,8 +14,9 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
-RUN npm install -g bun
 COPY --from=builder /app/.next/standalone ./
+# Install sharp explicitly in the runtime environment to ensure correct binaries
+RUN npm install sharp
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 EXPOSE 3000

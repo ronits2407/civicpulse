@@ -48,7 +48,6 @@ function getOllamaClient(): OpenAI {
     _ollamaClient = new OpenAI({
       baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
       apiKey: process.env.OLLAMA_API_KEY || 'ollama', // local ollama doesn't require a real API key
-      fetch: (url, init) => fetch(url, { ...init, keepalive: false })
     })
   }
   return _ollamaClient
@@ -60,7 +59,6 @@ function getOllamaLocalClient(): OpenAI {
     _ollamaLocalClient = new OpenAI({
       baseURL: process.env.OLLAMA_LOCAL_BASE_URL || 'http://localhost:11434/v1',
       apiKey: 'ollama', // local ollama API doesn't enforce this, but OpenAI client requires a value
-      fetch: (url, init) => fetch(url, { ...init, keepalive: false })
     })
   }
   return _ollamaLocalClient
@@ -122,6 +120,7 @@ export async function generateStructuredJSON<T>(
     config: {
       systemInstruction,
       temperature: 0.1,
+      responseMimeType: "application/json",
     },
   })
 
@@ -151,7 +150,7 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
     const imageData = await imageResponse.arrayBuffer()
     let buffer: any = Buffer.from(imageData)
     let mimeType = imageResponse.headers.get('content-type') || 'image/jpeg'
-    
+
     try {
       const sharp = (await import('sharp')).default
       buffer = await sharp(buffer)
@@ -163,7 +162,7 @@ export async function analyzeImage(imageUrl: string, prompt: string): Promise<st
       console.warn('[AI Client] Sharp image optimization skipped/failed:', e)
       if (!mimeType.startsWith('image/')) mimeType = 'image/jpeg'
     }
-    
+
     const base64Image = buffer.toString('base64')
 
     const visionModel = process.env.OLLAMA_VISION_MODEL || 'llava'

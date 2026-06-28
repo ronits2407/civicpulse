@@ -22,7 +22,7 @@ export async function createServerSupabaseClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             )
-          } catch {}
+          } catch { }
         },
       },
     }
@@ -37,11 +37,6 @@ export async function createServerSupabaseClient() {
 export function createServiceClient() {
   return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      global: {
-        fetch: (url, init) => fetch(url, { ...init, keepalive: false })
-      }
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }

@@ -10,7 +10,6 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   output: "standalone",
-  serverExternalPackages: ["sharp"],
   turbopack: {}, // Silences Turbopack error caused by next-pwa's webpack config injection
 };
 

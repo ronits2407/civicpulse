@@ -65,10 +65,6 @@ export async function runClassifierAgent(state: AgentState): Promise<AgentState>
       }
     }
 
-    const updatedTrace = state.translationTrace 
-      ? state.translationTrace + (imageAnalysis ? `\n\n[Agent 1 Vision]: ${imageAnalysis}` : '') 
-      : (imageAnalysis ? `[Agent 1 Vision]: ${imageAnalysis}` : null);
-
     console.log('[Agent 1: Classifier] Completed successfully. Updating DB...');
     await supabase.from('issues').update({
       title: classification.suggested_title,
@@ -78,7 +74,7 @@ export async function runClassifierAgent(state: AgentState): Promise<AgentState>
       is_emergency: classification.is_emergency,
       department_id: classification.department_id || null,
       address: state.address || null,
-      translation_trace: updatedTrace,
+      image_analysis: imageAnalysis || null,
       pipeline_stage: 'agent2_deduplication'
     }).eq('id', state.reportId)
 

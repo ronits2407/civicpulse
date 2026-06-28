@@ -217,8 +217,7 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
     }
   }, [isRunning])
 
-  const imageAnalysisMatch = issue.translation_trace?.match(/\[Agent 1 Vision\]: (.*)/s)
-  const imageAnalysisText = imageAnalysisMatch ? imageAnalysisMatch[1].trim() : null
+  const imageAnalysisText = issue.image_analysis;
 
   return (
     <div className="mt-3 space-y-3">
@@ -690,7 +689,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                   {agent5Alerts.map((alert, idx) => (
                     <Card key={idx} className="bg-card border-border overflow-hidden flex flex-col h-full">
                       <div className="p-4 flex-1">
-                        <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center justify-between mb-2">
                           <Badge variant="outline" className="bg-[#0969da]/10 text-[#0969da] border-[#0969da]/30 capitalize px-2 py-0.5">
                             {alert.predicted_category}
                           </Badge>
@@ -698,6 +697,12 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                             {(alert.confidence * 100).toFixed(0)}% Confidence
                           </span>
                         </div>
+                        {alert.address && (
+                          <div className="flex items-start gap-1 mb-2 text-muted-foreground text-[11px]">
+                            <MapPin className="w-3 h-3 mt-0.5 shrink-0" />
+                            <span className="line-clamp-2">{alert.address}</span>
+                          </div>
+                        )}
                         <p className="text-[13px] text-muted-foreground leading-relaxed">
                           {alert.basis_summary}
                         </p>

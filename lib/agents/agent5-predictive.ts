@@ -114,8 +114,11 @@ export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
       // 5. Insert predictions into database
       for (const pred of predictions) {
         const pointWkt = `POINT(${cluster.centroid.lng} ${cluster.centroid.lat})`;
+        const address = cluster.issues.find((i: any) => i.address)?.address || null;
+        
         const alertToInsert = {
           location: pointWkt,
+          address: address,
           predicted_category: pred.predicted_category,
           confidence: pred.confidence,
           basis_summary: pred.basis_summary,

@@ -216,8 +216,7 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
     }
   }, [isRunning])
 
-  const imageAnalysisMatch = issue.translation_trace?.match(/\[Agent 1 Vision\]: (.*)/s)
-  const imageAnalysisText = imageAnalysisMatch ? imageAnalysisMatch[1].trim() : null
+  const imageAnalysisText = issue.image_analysis;
 
   return (
     <div className="mt-3 space-y-3">

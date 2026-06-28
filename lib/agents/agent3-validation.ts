@@ -10,10 +10,10 @@ const WEATHER_RELEVANCE_SYSTEM = `You determine if a reported civic issue might 
 Return JSON with exactly this structure, no markdown or preamble:
 { "requires_weather_check": boolean }`
 
-const WEATHER_RELEVANCE_PROMPT = (text: string, category: string) => `
+const WEATHER_RELEVANCE_PROMPT = (text: string, category: string, address?: string) => `
 Report: "${text}"
 Category: ${category}
-
+${address ? `Location: ${address}\n` : ''}
 Does validating this issue require recent weather context (e.g. checking for heavy rain, wind, or storms)?
 `
 
@@ -50,7 +50,10 @@ const VALIDATION_PROMPT = (
   category: string,
   severity: number,
   weather: string,
-  imageAnalysis?: string
+  imageAnalysis?: string,
+  address?: string,
+  lat?: number,
+  lng?: number
 ) => `
 Assess the credibility of this civic issue report.
 
@@ -58,11 +61,14 @@ Report: "${text}"
 ${imageAnalysis ? `Visual Evidence Analysis: "${imageAnalysis}"\n` : ''}
 Category: ${category}
 Severity claimed: ${severity}/10
+${address ? `Reported Location: ${address} (Lat: ${lat}, Lng: ${lng})\n` : ''}
+Time of report: Just now (Current time)
 Current weather at location: ${weather}
 
 Consider:
 - Is the reported issue consistent with current weather? (e.g., flooding during rain = credible)
 - Does the description contain verifiable details? (Note: Short reports like "Pothole here" are normal and should NOT be penalized for lack of detail).
+- The location is provided automatically by GPS, so do NOT penalize the user for missing location details in the text itself.
 - Is the severity claim proportionate to the description? (Trust the severity unless it is obviously fake or wildly exaggerated like "volcano erupting").
 - Are there any red flags suggesting intentional spam, fake reporting, or impossible contradictions?
 
@@ -80,7 +86,7 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
   try {
     console.log(`[Agent 3: Validator] Loop 1: Asking LLM if weather check is required...`);
     const weatherCheck = await generateStructuredJSON<{ requires_weather_check: boolean }>(
-      WEATHER_RELEVANCE_PROMPT(state.rawText, state.classification?.category || 'unknown'),
+      WEATHER_RELEVANCE_PROMPT(state.rawText, state.classification?.category || 'unknown', state.address),
       WEATHER_RELEVANCE_SYSTEM
     )
     
@@ -103,7 +109,10 @@ export async function runValidationAgent(state: AgentState): Promise<AgentState>
       state.classification?.category || 'unknown',
       state.classification?.severity || 5,
       weather,
-      state.imageAnalysis
+      state.imageAnalysis,
+      state.address,
+      state.coordinates?.lat,
+      state.coordinates?.lng
     )
 
     console.log(`[Agent 3: Validator] === DATA SENT TO LLM ===\n${validationPromptText}\n=================================`);

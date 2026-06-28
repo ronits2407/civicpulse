@@ -657,7 +657,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6">
+          <div className="flex-1 overflow-y-auto scrollbar-hide p-6 space-y-6 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
             <div className="space-y-3 bg-card border border-border p-4 rounded-xl">
               <label className="text-xs font-bold text-foreground uppercase tracking-wider">Lookback Period</label>
               <select 
@@ -1371,7 +1371,10 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                       {/* AGENT 5: PREDICTIVE ANALYTICS */}
                       {(() => {
                         const isDuplicate = !!selectedIssue.cluster_id && selectedIssue.status === 'closed'
-                        const state5 = getAgentState(selectedIssue.pipeline_stage, 'agent5_predictive', isDuplicate)
+                        let state5: PipelineState = 'pending'
+                        if (isDuplicate) state5 = 'skipped'
+                        else if (selectedIssue.agent5_completed) state5 = 'done'
+                        
                         return (
                           <div className={`relative ${state5 === 'pending' || state5 === 'skipped' ? 'opacity-40' : ''}`}>
                             <div className={`absolute -left-[33px] top-0.5 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${state5 === 'done' ? 'bg-[#2da44e] shadow-emerald-500/30' : state5 === 'skipped' ? 'bg-slate-600 shadow-slate-500/30' : 'bg-slate-800 opacity-40'}`} />
@@ -1383,6 +1386,8 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                                 </span>
                                 {state5 === 'skipped' ? (
                                   <span className="text-[9px] font-bold text-slate-400 bg-slate-500/10 px-1.5 py-0.2 rounded border border-slate-500/20 uppercase tracking-wide leading-none">SKIPPED</span>
+                                ) : state5 === 'done' ? (
+                                  <span className="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/20 uppercase tracking-wide leading-none">DONE</span>
                                 ) : (
                                   <span className="text-[9px] font-bold text-muted-foreground bg-card px-1.5 py-0.2 rounded border border-border uppercase tracking-wide leading-none">SCHEDULED</span>
                                 )}

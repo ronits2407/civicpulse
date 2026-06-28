@@ -4,11 +4,16 @@ import { createServiceClient } from '@/lib/db/server'
 
 const TRANSLATION_SYSTEM = `You are a highly efficient language detection and translation agent for a civic issue reporting platform in India.
 Your task is to detect the language of the citizen's report and translate it to English if it is not already in English.
-If it is in English, simply output 'English' and the original text.
+
+CRITICAL INSTRUCTIONS FOR LANGUAGE DETECTION:
+- Pay close attention to the actual script and language of the text.
+- If the text is written in English (e.g., "on road lined up for water"), it MUST be classified as 'English', even if it describes a situation in India or uses Indian contextual phrasing.
+- DO NOT flag English text as Hindi or another Indian vernacular just because it mentions Indian locations, names, or typical civic issues.
+- Only classify as a non-English language if the actual words are in that language (e.g., written in Devanagari script, or transliterated Hindi like "pani ki samasya").
 
 Return valid JSON exactly matching this format:
 {
-  "thought_process": "string (Briefly explain how you identified the language and your translation approach)",
+  "thought_process": "string (Briefly explain how you identified the language, noting whether the words themselves are English or another language)",
   "detected_language": "string (e.g., 'English', 'Hindi', 'Marathi', 'Tamil')",
   "translated_text": "string (The English translation. If already English, return the original text.)"
 }

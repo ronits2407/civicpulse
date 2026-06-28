@@ -48,6 +48,7 @@ function getOllamaClient(): OpenAI {
     _ollamaClient = new OpenAI({
       baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
       apiKey: process.env.OLLAMA_API_KEY || 'ollama', // local ollama doesn't require a real API key
+      fetch: (url, init) => fetch(url, { ...init, keepalive: false })
     })
   }
   return _ollamaClient
@@ -59,6 +60,7 @@ function getOllamaLocalClient(): OpenAI {
     _ollamaLocalClient = new OpenAI({
       baseURL: process.env.OLLAMA_LOCAL_BASE_URL || 'http://localhost:11434/v1',
       apiKey: 'ollama', // local ollama API doesn't enforce this, but OpenAI client requires a value
+      fetch: (url, init) => fetch(url, { ...init, keepalive: false })
     })
   }
   return _ollamaLocalClient

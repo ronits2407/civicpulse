@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/db/client'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Camera, Send, Loader2, Navigation, Map, CheckCircle2, X, Video } from 'lucide-react'
+import { Camera, Send, Loader2, Navigation, Map, CheckCircle2, X, Video, Mic } from 'lucide-react'
 import { toast } from 'sonner'
 import { LocationPickerPanel } from '@/components/report/LocationPickerPanel'
 import { WebcamModal } from '@/components/report/WebcamModal'
@@ -33,6 +33,71 @@ export default function ReportPage() {
   const [locationMode, setLocationMode] = useState<'none' | 'gps' | 'map'>('none')
   const [isGettingGPS, setIsGettingGPS] = useState(false)
   const [isMapOpen, setIsMapOpen] = useState(false)
+
+  // Speech Recognition state
+  const [isListening, setIsListening] = useState(false)
+  const recognitionRef = useRef<any>(null)
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+    }
+  }, [])
+
+  const toggleListening = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop()
+      }
+      return
+    }
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      toast.error('Voice reporting is not supported in your browser.')
+      return
+    }
+
+    try {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      const recognition = new SpeechRecognition()
+      recognitionRef.current = recognition
+      
+      recognition.continuous = true
+      recognition.interimResults = false
+
+      recognition.onstart = () => {
+        setIsListening(true)
+        toast.success('Listening...', { id: 'mic-toast' })
+      }
+
+      recognition.onresult = (event: any) => {
+        const current = event.resultIndex
+        const transcript = event.results[current][0].transcript
+        setText(prev => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + transcript)
+      }
+
+      recognition.onerror = (event: any) => {
+        if (event.error === 'not-allowed') {
+          toast.error('Microphone access denied.', { id: 'mic-toast' })
+        } else if (event.error !== 'no-speech') {
+          toast.error(`Microphone error: ${event.error}`, { id: 'mic-toast' })
+        }
+        setIsListening(false)
+      }
+
+      recognition.onend = () => {
+        setIsListening(false)
+        toast.dismiss('mic-toast')
+      }
+
+      recognition.start()
+    } catch (err) {
+      toast.error('Could not start microphone.', { id: 'mic-toast' })
+      console.error(err)
+    }
+  }
 
   // ----------------------------------------------------------------
   // Image handlers
@@ -216,13 +281,27 @@ export default function ReportPage() {
           {/* Textarea */}
           <div>
             <label htmlFor="issue-description" className="block text-sm font-semibold text-foreground mb-2">Describe problem</label>
-            <Textarea
-              id="issue-description"
-              placeholder="Describe the problem... e.g. There's a large pothole on MG Road, it damaged my bike yesterday"
-              value={text}
-              onChange={e => setText(e.target.value)}
-              className="bg-card border-border text-foreground placeholder:text-muted-foreground min-h-[150px] resize-none rounded-xl focus-visible:ring-1 focus-visible:ring-[#0969da]"
-            />
+            <div className="relative">
+              <Textarea
+                id="issue-description"
+                placeholder="Describe the problem... e.g. There's a large pothole on MG Road, it damaged my bike yesterday"
+                value={text}
+                onChange={e => setText(e.target.value)}
+                className="bg-card border-border text-foreground placeholder:text-muted-foreground min-h-[150px] resize-none rounded-xl focus-visible:ring-1 focus-visible:ring-[#0969da] pr-14 pb-14"
+              />
+              <button
+                type="button"
+                onClick={toggleListening}
+                className={`absolute bottom-3 right-3 p-3 rounded-full transition-colors flex items-center justify-center ${
+                  isListening 
+                    ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+                }`}
+                title={isListening ? 'Stop listening' : 'Start voice reporting'}
+              >
+                <Mic className={`w-5 h-5 ${isListening ? 'animate-pulse' : ''}`} />
+              </button>
+            </div>
           </div>
 
           {/* Media Upload */}

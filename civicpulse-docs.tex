@@ -577,6 +577,33 @@ Detects the language of a citizen's typed report and translates it to English so
 \textbf{Output fields:} \tech{category} (one of: infrastructure, sanitation, safety, utility, environment), \tech{subcategory}, \tech{severity} (1–10), \tech{is\_emergency} (boolean), \tech{suggested\_title}, \tech{department\_id} (matched from the \tech{departments} table by category scope).
 
 \subsection{Agent 2: Deduplication — Three-Layer Strategy}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    issue/.style={circle, fill=cpblue, inner sep=0pt, minimum size=6pt},
+    newissue/.style={circle, fill=cpteal, inner sep=0pt, minimum size=8pt, drop shadow={opacity=0.3}},
+    radius/.style={circle, draw=cpteal!50, fill=cpteal!10, inner sep=0pt, minimum size=4cm}
+  ]
+  % Radius
+  \node[radius] at (0,0) {};
+  
+  % Center
+  \node[newissue, label=above:{\footnotesize New Issue}] at (0,0) {};
+  
+  % Existing issues
+  \node[issue, label=right:{\footnotesize Sim: 0.92}] at (0.8, 0.5) {};
+  \node[issue, label=left:{\footnotesize Sim: 0.88}] at (-1.2, 0.2) {};
+  \node[issue, label=below:{\footnotesize Sim: 0.75}] at (0.4, -1.1) {};
+  
+  \node[font=\sffamily\small\color{cpteal}, align=center] at (0, -2.4) {PostGIS 200m Search Radius};
+  
+  \draw[dashed, cpteal] (0,0) -- (0.8, 0.5);
+  \draw[dashed, cpteal] (0,0) -- (-1.2, 0.2);
+  \draw[dashed, cpteal] (0,0) -- (0.4, -1.1);
+\end{tikzpicture}
+\caption{Agent 2 queries PostGIS for issues within 200m, then applies pgvector cosine similarity. Issues $\ge 0.85$ are flagged as duplicates.}
+\end{figure}
 \label{sec:agent2}
 \textbf{File:} \file{lib/agents/agent2-deduplication.ts}
 
@@ -650,6 +677,8 @@ Environment    & 48 h & 120 h & 240 h \\
 Generates a 150–200 word professional civic action brief. If the original language is non-English, also generates a \tech{local\_civic\_brief} translated into the citizen's language.
 
 \subsection{Agent 5: Predictive Intelligence}
+
+\screenshot[0.7\linewidth]{s10_agent5.jpg}{Agent 5 predictive alerts panel}
 \label{sec:agent5}
 \textbf{File:} \file{lib/agents/agent5-predictive.ts}
 
@@ -829,6 +858,29 @@ When an issue is resolved, citizens generate a shareable OG image (1200×630px) 
 Issues with credibility $< 6$ enter \tech{community\_review}. Nearby citizens vote verify/deny. Quorum rules: minimum 3 votes; if confirms $\geq$ denies the issue resumes the pipeline at Agent 4. If denies $>$ confirms the issue is closed and the reporter loses 5 karma. The vote endpoint internally calls \file{/api/reports/retry} on confirmation.
 
 \subsection{Route Optimisation with TSP}
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    point/.style={circle, fill=cpblue, inner sep=0pt, minimum size=8pt, drop shadow={opacity=0.3}},
+    depot/.style={rectangle, rounded corners=2pt, fill=cpteal, text=white, font=\sffamily\bfseries\footnotesize, inner sep=3pt, drop shadow={opacity=0.3}}
+  ]
+  
+  \node[depot] (D) at (0,0) {Base};
+  \node[point] (P1) at (1, 2) {};
+  \node[point] (P2) at (3, 2.5) {};
+  \node[point] (P3) at (4, 0.5) {};
+  \node[point] (P4) at (2.5, -1) {};
+  
+  \draw[->, thick, cpblue] (D) -- (P1) node[midway, left, font=\scriptsize\color{cpgray}] {1};
+  \draw[->, thick, cpblue] (P1) -- (P2) node[midway, above, font=\scriptsize\color{cpgray}] {2};
+  \draw[->, thick, cpblue] (P2) -- (P3) node[midway, right, font=\scriptsize\color{cpgray}] {3};
+  \draw[->, thick, cpblue] (P3) -- (P4) node[midway, right, font=\scriptsize\color{cpgray}] {4};
+  \draw[->, dashed, cpblue!50] (P4) -- (D) node[midway, below, font=\scriptsize\color{cpgray}] {Return};
+  
+\end{tikzpicture}
+\caption{TSP Route Optimisation computes the most efficient path for municipal workers to address clustered issues in a single trip.}
+\end{figure}
 The admin Route Planner clusters open issues geographically and computes an optimal visit sequence for municipal field teams via Google Maps Routes API \tech{optimizeWaypointOrder: true}. The encoded polyline is rendered on a Mapbox map.
 
 \clearpage
@@ -863,66 +915,6 @@ CivicPulse is built with a \textbf{mobile-first approach} — every screen is de
   \item \textbf{PWA-ready:} A service worker stub (\file{public/sw.js}) and web manifest are in place for future offline support and home-screen installation.
 \end{itemize}
 
-\subsection{Key Screens}
-
-\screenshot[0.85\linewidth]{s2_login.jpg}{Login — Google OAuth + email magic link}
-
-\screenshot[0.85\linewidth]{s3_report_top.jpg}{Report page — text input + voice button}
-
-\clearpage
-
-\screenshot[0.85\linewidth]{s4_report_bottom.jpg}{Report page — image upload, webcam, GPS map}
-
-\screenshot[0.85\linewidth]{s5_dashboard.jpg}{Citizen dashboard — issue cards with pipeline stepper}
-
-\clearpage
-
-\begin{figure}[H]
-\centering
-\begin{subfigure}[t]{0.45\linewidth}
-  \includegraphics[width=\linewidth]{s6_issue_detail_1.jpg}
-  \caption{Pipeline 1}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.45\linewidth}
-  \includegraphics[width=\linewidth]{s6_issue_detail_2.jpg}
-  \caption{Pipeline 2}
-\end{subfigure}
-\end{figure}
-
-\begin{figure}[H]
-\centering
-\begin{subfigure}[t]{0.45\linewidth}
-  \includegraphics[width=\linewidth]{s6_issue_detail_3.jpg}
-  \caption{Pipeline 3}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.45\linewidth}
-  \includegraphics[width=\linewidth]{s6_issue_detail_4.jpg}
-  \caption{Pipeline 4}
-\end{subfigure}
-\caption{Issue detail — full pipeline view from initial report to predictive analytics}
-\end{figure}
-
-\clearpage
-
-\screenshot[0.85\linewidth]{s7_community_review.jpg}{Community verification — verify/deny panel}
-
-\screenshot[0.85\linewidth]{s8_admin_inbox.jpg}{Admin dashboard — issue inbox with filters}
-
-\clearpage
-
-\screenshot[0.85\linewidth]{s9_admin_map.jpg}{Admin map — India-wide issue clusters}
-
-\screenshot[0.85\linewidth]{s10_agent5.jpg}{Agent 5 predictive alerts panel}
-
-\clearpage
-
-\screenshot[0.85\linewidth]{s11_route_planner.jpg}{Route Planner — cluster selection + TSP route}
-
-\screenshot[0.85\linewidth]{s12_agent2_map.jpg}{Agent 2 deduplication map — cluster visualisation}
-
-\clearpage
-
-\clearpage
 
 % ============================================================
 \section{User Perspective — Accessibility and Inclusivity}
@@ -1002,11 +994,15 @@ Single point of contact for all AI operations with four exported functions:
 \end{tabular}
 
 \subsection{Auth Flow}
+
+\screenshot[0.7\linewidth]{s2_login.jpg}{Login — Google OAuth + email magic link}
 The OAuth flow: Google consent → callback \file{/auth/callback} → \tech{exchangeCodeForSession()} → role-based redirect. The \tech{role=admin} query parameter in the redirect URL sets the user's profile role and sends them to \file{/admin/dashboard}.
 
 Auth middleware (\file{proxy.ts}) protects \file{/dashboard}, \file{/report}, and \file{/admin}. For \file{/admin} paths, it additionally queries the \tech{profiles} table to verify \tech{role='admin'}.
 
 \subsection{Community Verification System}
+
+\screenshot[0.7\linewidth]{s7_community_review.jpg}{Community verification — verify/deny panel}
 \textbf{Files:} \file{app/api/reviews/route.ts}, \file{app/api/reviews/[issueId]/vote/route.ts}
 
 \begin{enumerate}
@@ -1140,6 +1136,10 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 
 \subsection{End-to-End Citizen Flow}
 
+\screenshot[0.7\linewidth]{s3_report_top.jpg}{Report page — text input + voice button}
+
+\screenshot[0.7\linewidth]{s5_dashboard.jpg}{Citizen dashboard — issue cards with pipeline stepper}
+
 \begin{tabular}{@{} C{0.6cm} L{4cm} L{9.4cm} @{}}
 \toprule
 \rowcolor{cpblue}
@@ -1158,6 +1158,10 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 \end{tabular}
 
 \subsection{End-to-End Admin Flow}
+
+\screenshot[0.7\linewidth]{s8_admin_inbox.jpg}{Admin dashboard — issue inbox with filters}
+
+\screenshot[0.7\linewidth]{s9_admin_map.jpg}{Admin map — India-wide issue clusters}
 
 \begin{tabular}{@{} C{0.6cm} L{4cm} L{9.4cm} @{}}
 \toprule

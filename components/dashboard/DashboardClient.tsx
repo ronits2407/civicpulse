@@ -503,9 +503,15 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
             // Update selected issue if it's currently open
             setSelectedIssue(prev => (prev?.id === updatedIssue.id ? updatedIssue : prev))
 
-            toast.info('Status Updated', {
-              description: `"${updatedIssue.title || 'Your report'}" status is now ${STATUS_DETAILS[updatedIssue.status]?.label || updatedIssue.status}.`,
-            })
+            if (updatedIssue.pipeline_stage === 'failed' || updatedIssue.pipeline_stage?.endsWith('_failed')) {
+              toast.error('Pipeline Failed', {
+                description: updatedIssue.error || `Error processing "${updatedIssue.title || 'your report'}". Please try again.`,
+              })
+            } else {
+              toast.info('Status Updated', {
+                description: `"${updatedIssue.title || 'Your report'}" status is now ${STATUS_DETAILS[updatedIssue.status]?.label || updatedIssue.status}.`,
+              })
+            }
           }
           if (payload.eventType === 'INSERT') {
             const newIssue = payload.new as Issue

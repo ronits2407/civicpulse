@@ -883,6 +883,14 @@ Issues with credibility $< 6$ enter \tech{community\_review}. Nearby citizens vo
 \end{figure}
 The admin Route Planner clusters open issues geographically and computes an optimal visit sequence for municipal field teams via Google Maps Routes API \tech{optimizeWaypointOrder: true}. The encoded polyline is rendered on a Mapbox map.
 
+\subsection{Interactive Geospatial Visualisation}
+
+\screenshot[0.7\linewidth]{s9_admin_map.jpg}{Interactive Geospatial Map — Real-time issue clustering for citizens and administrators}
+
+CivicPulse leverages Mapbox GL JS and GeoJSON to render an interactive, real-time map of all civic issues across the region. Unlike traditional platforms that restrict geospatial data to administrators, this interactive clustering map is exposed to \textbf{both citizens and administrators}.
+
+By providing citizens with a bird's-eye view of civic health in their locality, we foster community awareness and transparency. The map dynamically clusters nearby issues to maintain performance and prevent visual clutter, elegantly unpacking into individual issue pins as the user zooms in.
+
 \clearpage
 
 % ============================================================
@@ -1160,8 +1168,6 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 \subsection{End-to-End Admin Flow}
 
 \screenshot[0.7\linewidth]{s8_admin_inbox.jpg}{Admin dashboard — issue inbox with filters}
-
-\screenshot[0.7\linewidth]{s9_admin_map.jpg}{Admin map — India-wide issue clusters}
 
 \begin{tabular}{@{} C{0.6cm} L{4cm} L{9.4cm} @{}}
 \toprule

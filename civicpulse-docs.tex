@@ -47,6 +47,7 @@
   BoldItalicFont=SourceSansPro-BoldIt
 ]{SourceSansPro-Regular}
 \setmonofont[Scale=0.88]{SourceCodePro-Regular}
+\newfontfamily\marathifont{Noto Sans Devanagari}[Script=Devanagari]
 
 % ── Colour Palette ────────────────────────────────────────────
 \definecolor{cpblue}{HTML}{0D47A1}    % deep blue — headings
@@ -707,80 +708,100 @@ CivicPulse is built with a \textbf{mobile-first approach} — every screen is de
 
 \begin{figure}[H]
 \centering
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s2_login.jpg}
-  \caption{Login — Google OAuth + email magic link}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s3_report_top.jpg}
-  \caption{Report page — text input + voice button}
-\end{subfigure}
+\includegraphics[width=0.85\linewidth]{s2_login.jpg}
+\caption{Login — Google OAuth + email magic link}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s4_report_bottom.jpg}
-  \caption{Report page — image upload, webcam, GPS map}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s5_dashboard.jpg}
-  \caption{Citizen dashboard — issue cards with pipeline stepper}
-\end{subfigure}
+\includegraphics[width=0.85\linewidth]{s3_report_top.jpg}
+\caption{Report page — text input + voice button}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{s4_report_bottom.jpg}
+\caption{Report page — image upload, webcam, GPS map}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\begin{subfigure}[t]{0.24\linewidth}
+\includegraphics[width=0.85\linewidth]{s5_dashboard.jpg}
+\caption{Citizen dashboard — issue cards with pipeline stepper}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.45\linewidth}
   \includegraphics[width=\linewidth]{s6_issue_detail_1.jpg}
   \caption{Pipeline 1}
 \end{subfigure}\hfill
-\begin{subfigure}[t]{0.24\linewidth}
+\begin{subfigure}[t]{0.45\linewidth}
   \includegraphics[width=\linewidth]{s6_issue_detail_2.jpg}
   \caption{Pipeline 2}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.24\linewidth}
+\end{subfigure}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.45\linewidth}
   \includegraphics[width=\linewidth]{s6_issue_detail_3.jpg}
   \caption{Pipeline 3}
 \end{subfigure}\hfill
-\begin{subfigure}[t]{0.24\linewidth}
+\begin{subfigure}[t]{0.45\linewidth}
   \includegraphics[width=\linewidth]{s6_issue_detail_4.jpg}
   \caption{Pipeline 4}
 \end{subfigure}
 \caption{Issue detail — full pipeline view from initial report to predictive analytics}
 \end{figure}
 
+\clearpage
+
 \begin{figure}[H]
 \centering
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s7_community_review.jpg}
-  \caption{Community verification — verify/deny panel}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s8_admin_inbox.jpg}
-  \caption{Admin dashboard — issue inbox with filters}
-\end{subfigure}
+\includegraphics[width=0.85\linewidth]{s7_community_review.jpg}
+\caption{Community verification — verify/deny panel}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s9_admin_map.jpg}
-  \caption{Admin map — India-wide issue clusters}
-\end{subfigure}\hfill
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s10_agent5.jpg}
-  \caption{Agent 5 predictive alerts panel}
-\end{subfigure}
+\includegraphics[width=0.85\linewidth]{s8_admin_inbox.jpg}
+\caption{Admin dashboard — issue inbox with filters}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{s9_admin_map.jpg}
+\caption{Admin map — India-wide issue clusters}
 \end{figure}
 
 \begin{figure}[H]
 \centering
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s11_route_planner.jpg}
-  \caption{Route Planner — cluster selection + TSP route}
-\end{subfigure}
+\includegraphics[width=0.85\linewidth]{s10_agent5.jpg}
+\caption{Agent 5 predictive alerts panel}
 \end{figure}
+
+\clearpage
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{s11_route_planner.jpg}
+\caption{Route Planner — cluster selection + TSP route}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\linewidth]{s12_agent2_map.jpg}
+\caption{Agent 2 deduplication map — cluster visualisation}
+\end{figure}
+
+\clearpage
 
 \clearpage
 
@@ -795,7 +816,7 @@ Consider \textbf{Sunita}, a homemaker in Nashik who writes only in Marathi:
 
 \begin{enumerate}
   \item \textbf{Login:} Opens the app, taps ``Citizen,'' signs in with Google (consent screen renders in her device language). No English required.
-  \item \textbf{Reporting:} She sees a burst water pipe. She opens the Report page and \textit{types} in Marathi: ``\textbf{माझ्या गल्लीत पाण्याची पाइप फुटली आहे, पाणी वाहत आहे.}'' She taps the webcam button to attach a photo and hits ``Use GPS.''
+  \item \textbf{Reporting:} She sees a burst water pipe. She opens the Report page and \textit{types} in Marathi: ``\textbf{\marathifont माझ्या गल्लीत पाण्याची पाइप फुटली आहे, पाणी वाहत आहे.}'' She taps the webcam button to attach a photo and hits ``Use GPS.''
   \item \textbf{Agent 0:} Detects Marathi, translates to English: ``A water pipe has burst in my lane, water is flowing.'' Translation trace stored.
   \item \textbf{Agents 1–4:} Classify as utility/water\_leakage, severity 7, department: Water Supply. Deduplication passes. Credibility 9/10 (photo + GPS). Civic brief generated in both English and Marathi.
   \item \textbf{Dashboard:} Sunita's \tech{local\_civic\_brief} is displayed in Marathi — she reads the municipality's action plan in her own language.
@@ -875,13 +896,7 @@ Auth middleware (\file{proxy.ts}) protects \file{/dashboard}, \file{/report}, an
 \subsection{PostGIS WKB Decoding}
 Supabase returns geography columns as hex-encoded WKB. Four routes decode via \tech{wkx}: \tech{wkx.Geometry.parse(Buffer.from(hex, 'hex')).toGeoJSON()}, extracting \tech{coordinates[1]} (lat) and \tech{coordinates[0]} (lng). WKT text format handled as fallback.
 
-\begin{figure}[H]
-\centering
-\begin{subfigure}[t]{0.48\linewidth}
-  \includegraphics[width=\linewidth]{s12_agent2_map.jpg}
-  \caption{Agent 2 deduplication map — cluster visualisation}
-\end{subfigure}
-\end{figure}
+
 
 \clearpage
 
@@ -1032,17 +1047,7 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 \bottomrule
 \end{tabular}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.9\linewidth]{s10_agent5.jpg}
-\caption{Agent 5 predictive analysis panel — confidence scores and geographic hotspot summaries}
-\end{figure}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.9\linewidth]{s11_route_planner.jpg}
-\caption{Admin Route Planner — geographic clusters and TSP-optimised field team routes}
-\end{figure}
 
 \subsection{Test Coverage}
 Twelve dedicated test files in \file{tests/}: agents 1–4, DB connectivity, geolocation, Gemini vision, Ollama vision, update operations, community voting, and pipeline retry.

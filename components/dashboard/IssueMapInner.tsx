@@ -30,10 +30,10 @@ interface Props {
 // ------------------------------------------------------------------
 const CATEGORY_COLORS: Record<string, { pin: string; circle: string; fill: string }> = {
   infrastructure: { pin: '#0969da', circle: '#0969da', fill: '#0969da22' },
-  sanitation:     { pin: '#34d399', circle: '#34d399', fill: '#34d39922' },
-  safety:         { pin: '#f87171', circle: '#f87171', fill: '#f8717122' },
-  utility:        { pin: '#fbbf24', circle: '#fbbf24', fill: '#fbbf2422' },
-  environment:    { pin: '#2dd4bf', circle: '#2dd4bf', fill: '#2dd4bf22' },
+  sanitation: { pin: '#34d399', circle: '#34d399', fill: '#34d39922' },
+  safety: { pin: '#f87171', circle: '#f87171', fill: '#f8717122' },
+  utility: { pin: '#fbbf24', circle: '#fbbf24', fill: '#fbbf2422' },
+  environment: { pin: '#2dd4bf', circle: '#2dd4bf', fill: '#2dd4bf22' },
 }
 const DEFAULT_COLOR = { pin: '#94a3b8', circle: '#94a3b8', fill: '#94a3b822' }
 
@@ -248,12 +248,12 @@ function IssueLayer({
           </div>
           <ul style="margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px">
             ${cluster.issues
-              .slice(0, 5)
-              .map(
-                (i) =>
-                  `<li style="font-size:12px;font-weight:600;color:#e6edf3;padding:3px 0;border-bottom:1px solid #21262d">${i.title || i.category}</li>`
-              )
-              .join('')}
+          .slice(0, 5)
+          .map(
+            (i) =>
+              `<li style="font-size:12px;font-weight:600;color:#e6edf3;padding:3px 0;border-bottom:1px solid #21262d">${i.title || i.category}</li>`
+          )
+          .join('')}
             ${cluster.issues.length > 5 ? `<li style="font-size:11px;color:#8b949e;padding-top:2px">+${cluster.issues.length - 5} more…</li>` : ''}
           </ul>
         </div>`,
@@ -282,16 +282,15 @@ function IssueLayer({
             border-radius:9999px;padding:2px 8px;text-transform:capitalize;
             margin-bottom:6px;letter-spacing:.03em;margin-right:6px;
           ">${issue.category}</div>
-          ${
-            issue.status === 'community_review'
-              ? `<div style="
+          ${issue.status === 'community_review'
+          ? `<div style="
                   display:inline-block;font-size:10px;font-weight:700;
                   color:#ea580c;background:#ea580c18;border:1px solid #ea580c44;
                   border-radius:9999px;padding:2px 8px;text-transform:uppercase;
                   margin-bottom:6px;letter-spacing:.03em
                 ">Pending Verification</div>`
-              : ''
-          }
+          : ''
+        }
           <div style="font-size:12px;font-weight:700;color:#e6edf3;line-height:1.4">${issue.title || issue.category}</div>
           <div style="font-size:11px;color:#8b949e;margin-top:4px">${issue.address || ''}</div>
         </div>`,
@@ -391,9 +390,9 @@ function LocateMeControl() {
       ) : (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <circle cx="12" cy="12" r="4" />
-          <line x1="12" y1="2"  x2="12" y2="7"  />
+          <line x1="12" y1="2" x2="12" y2="7" />
           <line x1="12" y1="17" x2="12" y2="22" />
-          <line x1="2"  y1="12" x2="7"  y2="12" />
+          <line x1="2" y1="12" x2="7" y2="12" />
           <line x1="17" y1="12" x2="22" y2="12" />
         </svg>
       )}

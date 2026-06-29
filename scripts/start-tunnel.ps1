@@ -47,11 +47,7 @@ Write-Host "[*] Pushing new URL to GitHub Secrets..." -ForegroundColor Cyan
 Get-Content .env.production -Raw | gh secret set ENV_PRODUCTION
 Write-Host "[+] GitHub Secrets updated." -ForegroundColor Green
 
-Write-Host "[*] Triggering automatic CI/CD deployment on 'prod' branch..." -ForegroundColor Cyan
-git checkout prod
-git commit --allow-empty -m "deploy: auto-update cloudflare tunnel URL"
-git push origin prod
-git checkout dev
-
-Write-Host "[+] All done! The deployment pipeline is running on GitHub." -ForegroundColor Green
+Write-Host "[*] Updating Cloud Run service environment variables..." -ForegroundColor Cyan
+gcloud run services update civicpulse --region asia-south1 --update-env-vars="OLLAMA_BASE_URL=$newApiUrl,OLLAMA_LOCAL_BASE_URL=$newApiUrl"
+Write-Host "[+] Cloud Run environment updated successfully!" -ForegroundColor Green
 Write-Host "Keep this terminal open, or leave the background process running to maintain the tunnel!" -ForegroundColor Yellow

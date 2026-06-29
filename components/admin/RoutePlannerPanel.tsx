@@ -133,6 +133,35 @@ export function RoutePlannerPanel({ isOpen, onClose, userLocation }: Props) {
      }
   }
 
+  const [isMobile, setIsMobile] = useState(false)
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
+
+  const mapArea = (
+    <>
+       <RoutePlannerMapInner 
+         clusters={clusters} 
+         selectedClusterId={selectedClusterId}
+         userLocation={userLocation}
+         activeRoute={activeRoute}
+       />
+       <Button
+          variant="ghost"
+          size="icon"
+          className="absolute top-4 right-4 z-[1000] bg-[#0d1117]/80 border border-[#30363d] backdrop-blur text-muted-foreground hover:text-foreground hover:bg-muted"
+          onClick={fetchClusters}
+          disabled={loading}
+          title="Refresh Clusters"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+        </Button>
+    </>
+  )
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
@@ -178,6 +207,12 @@ export function RoutePlannerPanel({ isOpen, onClose, userLocation }: Props) {
                       </button>
                     ))}
                   </div>
+
+                  {isMobile && (
+                    <div className="w-full h-[250px] relative mt-4 rounded-xl overflow-hidden border border-border">
+                      {mapArea}
+                    </div>
+                  )}
 
                   {selectedCluster && (
                     <div className="pt-4 border-t border-border mt-4">
@@ -235,24 +270,11 @@ export function RoutePlannerPanel({ isOpen, onClose, userLocation }: Props) {
         </div>
 
         {/* Map Area */}
-        <div className="flex-1 relative h-full">
-           <RoutePlannerMapInner 
-             clusters={clusters} 
-             selectedClusterId={selectedClusterId}
-             userLocation={userLocation}
-             activeRoute={activeRoute}
-           />
-           <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-4 right-4 z-[1000] bg-[#0d1117]/80 border border-[#30363d] backdrop-blur text-muted-foreground hover:text-foreground hover:bg-muted"
-              onClick={fetchClusters}
-              disabled={loading}
-              title="Refresh Clusters"
-            >
-              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
-        </div>
+        {!isMobile && (
+          <div className="flex-1 relative h-full hidden sm:block">
+             {mapArea}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   )

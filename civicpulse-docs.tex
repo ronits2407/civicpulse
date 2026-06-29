@@ -9,7 +9,7 @@
 % ── Core packages ────────────────────────────────────────────
 \usepackage{fontspec}
 \usepackage[a4paper, top=2.2cm, bottom=2.4cm, left=2.5cm, right=2.5cm]{geometry}
-\usepackage{xcolor}
+\usepackage[table,dvipsnames]{xcolor}
 \usepackage{graphicx}
 \usepackage{longtable}
 \usepackage{booktabs}
@@ -30,6 +30,7 @@
 \usepackage{tikz}
 \usepackage{tikz-cd}
 \usetikzlibrary{shapes.geometric,arrows.meta,positioning,fit,backgrounds,calc,shadows.blur}
+\usepackage{lastpage}
 \usepackage[hidelinks,
   pdftitle={CivicPulse: AI-Powered Civic Issue Reporting Platform},
   pdfauthor={Ronit Sonawane},
@@ -40,62 +41,67 @@
 \usepackage{cleveref}
 
 % ── Fonts ─────────────────────────────────────────────────────
-% MiKTeX will auto-install these on first run
-\setmainfont[
-  BoldFont=SourceSansPro-Bold,
-  ItalicFont=SourceSansPro-It,
-  BoldItalicFont=SourceSansPro-BoldIt
-]{SourceSansPro-Regular}
-\setmonofont[Scale=0.88]{SourceCodePro-Regular}
-\newfontfamily\marathifont{Noto Sans Devanagari}[Script=Devanagari]
+\IfFontExistsTF{Segoe UI}{%
+  \setsansfont{Segoe UI}[BoldFont={Segoe UI Bold},ItalicFont={Segoe UI Italic}]%
+}{}
+\IfFontExistsTF{Consolas}{%
+  \setmonofont{Consolas}[Scale=0.88]%
+}{}
+\newfontfamily\marathifont{Nirmala UI}[Script=Devanagari]
 
 % ── Colour Palette ────────────────────────────────────────────
 \definecolor{cpblue}{HTML}{0D47A1}    % deep blue — headings
 \definecolor{cpteal}{HTML}{00695C}    % teal — accents / section rules
 \definecolor{cpgray}{HTML}{455A64}    % blue-grey — body subdued
 \definecolor{cplight}{HTML}{E3F2FD}   % pale blue — callout bg
-\definecolor{cpbg}{HTML}{F5F7FA}      % near-white — code bg
+\definecolor{cpbg}{HTML}{EEF1F5}      % code bg — slightly darker
 \definecolor{cpgreen}{HTML}{1B5E20}   % dark green — tip boxes
 \definecolor{cporange}{HTML}{E65100}  % orange — warning boxes
 \definecolor{cpred}{HTML}{B71C1C}     % dark red — caution
-\definecolor{rowalt}{HTML}{EEF2F7}    % table alternating row
+\definecolor{cpaccent}{HTML}{F59E0B}  % amber/gold — highlight badges
+\definecolor{cpdark}{HTML}{0F172A}    % near-black — title page
+\definecolor{rowalt}{HTML}{F5F7FA}    % table alternating row
 
 % ── Section Heading Styles ────────────────────────────────────
 \titleformat{\section}
-  {\color{cpblue}\Large\bfseries}
-  {\color{cpteal}\thesection}{0.8em}{}
-  [\vspace{-2pt}\color{cpteal}\rule{\linewidth}{0.8pt}\vspace{4pt}]
+  {\sffamily\color{cpblue}\LARGE\bfseries}
+  {\makebox[0pt][r]{\color{cpteal}\rule[-2pt]{3.5pt}{16pt}\hspace{8pt}}\color{cpteal}\thesection}{0.8em}{}
+  [\vspace{-2pt}\color{cpteal}\rule{\linewidth}{0.7pt}\vspace{4pt}]
 
 \titleformat{\subsection}
-  {\color{cpblue}\large\bfseries}
+  {\sffamily\color{cpblue}\large\bfseries}
   {\color{cpteal}\thesubsection}{0.7em}{}
 
 \titleformat{\subsubsection}
-  {\color{cpgray}\normalsize\bfseries}
+  {\sffamily\color{cpteal}\normalsize\bfseries}
   {\thesubsubsection}{0.6em}{}
 
-\titlespacing*{\section}{0pt}{18pt}{6pt}
-\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+\titlespacing*{\section}{0pt}{22pt}{8pt}
+\titlespacing*{\subsection}{0pt}{14pt}{5pt}
 
 % ── tcolorbox Styles ─────────────────────────────────────────
 \tcbuselibrary{skins,breakable}
 
 \newtcolorbox{infobox}[1][]{
   enhanced, breakable,
-  colback=cplight, colframe=cpblue,
-  fonttitle=\bfseries\small\color{cpblue},
+  colback=cplight, colframe=cplight,
+  borderline west={3.5pt}{0pt}{cpteal},
+  sharp corners, boxrule=0pt,
+  fonttitle=\sffamily\bfseries\small\color{cpteal},
   title={\textbf{ℹ\; Note}}, #1,
-  left=6pt, right=6pt, top=4pt, bottom=4pt,
-  boxrule=0.5pt, arc=3pt
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  drop shadow
 }
 
 \newtcolorbox{importantbox}[1][]{
   enhanced, breakable,
-  colback=cplight, colframe=cpteal,
-  fonttitle=\bfseries\small\color{cpteal},
+  colback=cpaccent!6, colframe=cpaccent!6,
+  borderline west={3.5pt}{0pt}{cpaccent},
+  sharp corners, boxrule=0pt,
+  fonttitle=\sffamily\bfseries\small\color{cpaccent!80!black},
   title={\textbf{★\; Key Insight}}, #1,
-  left=6pt, right=6pt, top=4pt, bottom=4pt,
-  boxrule=0.5pt, arc=3pt
+  left=8pt, right=8pt, top=6pt, bottom=6pt,
+  drop shadow
 }
 
 % ── Code listings ─────────────────────────────────────────────
@@ -103,88 +109,164 @@
   backgroundcolor=\color{cpbg},
   basicstyle=\ttfamily\footnotesize,
   breaklines=true, breakatwhitespace=true,
-  frame=none, rulecolor=\color{cpblue!20},
-  xleftmargin=10pt, xrightmargin=10pt,
-  aboveskip=6pt, belowskip=6pt,
+  frame=l, framerule=2pt, rulecolor=\color{cpteal!40},
+  xleftmargin=14pt, xrightmargin=10pt,
+  aboveskip=8pt, belowskip=8pt,
   showstringspaces=false,
   keywordstyle=\color{cpblue}\bfseries,
   commentstyle=\color{cpgray}\itshape,
   stringstyle=\color{cpteal},
+  numbers=left, numberstyle=\tiny\color{cpgray!50}, numbersep=6pt
 }
 \lstset{style=civic}
 
 % ── Table helpers ─────────────────────────────────────────────
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcommand{\thead}[1]{{\color{white}\bfseries\sffamily #1}}
 
 % ── Header / footer ───────────────────────────────────────────
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\color{cpgray}\textbf{CivicPulse} — Technical Documentation}
-\fancyhead[R]{\small\color{cpgray}\nouppercase{\leftmark}}
-\fancyfoot[C]{\small\color{cpgray}\thepage}
-\renewcommand{\headrulewidth}{0.3pt}
+\fancyhead[L]{\small\color{cpgray}\sffamily\textbf{CivicPulse} — Technical Documentation}
+\fancyhead[R]{\small\color{cpgray}\sffamily\nouppercase{\leftmark}}
+\fancyfoot[C]{\small\color{cpgray}\sffamily\thepage\;/\;\pageref{LastPage}}
+\renewcommand{\headrulewidth}{0.4pt}
 \renewcommand{\headrule}{\color{cpteal}\hrule width\headwidth height\headrulewidth}
+\renewcommand{\footrulewidth}{0.15pt}
+\renewcommand{\footrule}{{\color{cpteal!30}\hrule width\headwidth height\footrulewidth}\vspace{3pt}}
 
 % ── Misc ──────────────────────────────────────────────────────
-\captionsetup{font=small, labelfont={bf,color=cpblue}, skip=4pt}
+\captionsetup{font={small,sf}, labelfont={bf,color=cpblue}, skip=6pt}
 \graphicspath{{document_assets/}}
-\setlist[itemize]{leftmargin=*, topsep=2pt, itemsep=1pt}
-\setlist[enumerate]{leftmargin=*, topsep=2pt, itemsep=1pt}
-\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{leftmargin=*, topsep=3pt, itemsep=2pt}
+\setlist[enumerate]{leftmargin=*, topsep=3pt, itemsep=2pt}
+\renewcommand{\arraystretch}{1.3}
 \setlength{\tabcolsep}{5pt}
 
 % ── Convenience macros ────────────────────────────────────────
 \newcommand{\tech}[1]{\texttt{\color{cpteal}#1}}
 \newcommand{\file}[1]{\texttt{\footnotesize\color{cpgray}#1}}
 \newcommand{\badge}[2]{\colorbox{#1}{\textcolor{white}{\tiny\bfseries #2}}}
+\newcommand{\pilltag}[1]{%
+  \tikz[baseline=(tag.base)]{\node[rounded corners=2pt, fill=cpblue!10,
+    inner xsep=4pt, inner ysep=1.5pt, font=\tiny\sffamily\color{cpblue}] (tag) {#1};}%
+}
+
+% ── Screenshot frame command ──────────────────────────────────
+\newcommand{\screenshot}[3][0.88\linewidth]{%
+  \begin{figure}[H]
+  \centering
+  \begin{tcolorbox}[enhanced, colback=white, colframe=cpgray!20,
+    boxrule=0.3pt, arc=4pt, boxsep=2pt,
+    left=0pt, right=0pt, top=0pt, bottom=0pt,
+    drop shadow, width=#1]
+    \includegraphics[width=\linewidth]{#2}
+  \end{tcolorbox}
+  \vspace{-2pt}
+  \caption{#3}
+  \end{figure}
+}
 
 % ============================================================
 \begin{document}
+\sloppy
 
 % ── COVER PAGE ───────────────────────────────────────────────
 \begin{titlepage}
 \begin{tikzpicture}[remember picture, overlay]
-  % Header bar
-  \fill[cpblue] (current page.north west) rectangle +(\paperwidth,-4.2cm);
-  % Decorative accent stripe
-  \fill[cpteal] (current page.north west) ++(0,-4.2cm) rectangle +(\paperwidth,-0.25cm);
-  % Bottom bar
-  \fill[cpblue!15] (current page.south west) rectangle +(\paperwidth, 1.8cm);
+  % ── Gradient header ──
+  \shade[top color=cpdark, bottom color=cpblue]
+    (current page.north west) rectangle ([yshift=-10.5cm]current page.north east);
+  % ── Decorative circles for depth ──
+  \fill[white, opacity=0.04] ([xshift=3cm, yshift=-3cm]current page.north west) circle (2.5cm);
+  \fill[white, opacity=0.03] ([xshift=14cm, yshift=-2cm]current page.north west) circle (1.8cm);
+  \fill[white, opacity=0.05] ([xshift=9cm, yshift=-7.5cm]current page.north west) circle (1.2cm);
+  \fill[white, opacity=0.03] ([xshift=17cm, yshift=-6.5cm]current page.north west) circle (2cm);
+  % ── Accent stripe ──
+  \fill[cpteal] ([yshift=-10.5cm]current page.north west) rectangle ([yshift=-10.8cm]current page.north east);
+  % ── Bottom bar ──
+  \fill[cpblue!8] (current page.south west) rectangle ([yshift=1.5cm]current page.south east);
+  \draw[cpteal!30] ([yshift=1.5cm]current page.south west) -- ([yshift=1.5cm]current page.south east);
 \end{tikzpicture}
 
-\vspace*{0.6cm}
-{\color{white}\bfseries\fontsize{38}{46}\selectfont CivicPulse}\\[4pt]
-{\color{white!80}\fontsize{15}{18}\selectfont AI-Powered Civic Issue Reporting Platform}\\[2pt]
-{\color{white!60}\small Problem Statement 2: Community Hero — Hyperlocal Problem Solver}
+% ── CP Monogram ──
+\vspace*{0.3cm}
+\begin{tikzpicture}[baseline]
+  \node[circle, fill=white, minimum size=1.4cm, inner sep=0pt,
+        drop shadow={shadow xshift=0.5mm, shadow yshift=-0.5mm, opacity=0.2}]
+    {\color{cpblue}\fontsize{16}{16}\selectfont\sffamily\bfseries CP};
+\end{tikzpicture}
+\hspace{8pt}
+{\color{white!70}\sffamily\small HACKATHON SUBMISSION}
 
-\vspace{1.8cm}
+\vspace{0.5cm}
+{\color{white}\sffamily\bfseries\fontsize{42}{50}\selectfont CivicPulse}\\[6pt]
+{\color{white!85}\sffamily\fontsize{16}{20}\selectfont AI-Powered Civic Issue Reporting Platform}\\[4pt]
+{\color{white!60}\sffamily\small Problem Statement 2: Community Hero — Hyperlocal Problem Solver}
 
+\vspace{0.7cm}
+
+% ── Key Metrics Row ──
+\begin{center}
+\begin{tikzpicture}
+  \node[rounded corners=4pt, draw=white!30, fill=white, fill opacity=0.15, text opacity=1, text=white,
+        minimum width=2.9cm, minimum height=1.4cm, align=center] at (0,0)
+    {\sffamily\fontsize{24}{28}\selectfont\bfseries 6\\[-3pt]{\footnotesize AI Agents}};
+  \node[rounded corners=4pt, draw=white!30, fill=white, fill opacity=0.15, text opacity=1, text=white,
+        minimum width=2.9cm, minimum height=1.4cm, align=center] at (3.5,0)
+    {\sffamily\fontsize{24}{28}\selectfont\bfseries 14\\[-3pt]{\footnotesize API Endpoints}};
+  \node[rounded corners=4pt, draw=white!30, fill=white, fill opacity=0.15, text opacity=1, text=white,
+        minimum width=2.9cm, minimum height=1.4cm, align=center] at (7,0)
+    {\sffamily\fontsize{20}{24}\selectfont\bfseries 3,300+\\[-3pt]{\footnotesize Lines of Code}};
+  \node[rounded corners=4pt, draw=white!30, fill=white, fill opacity=0.15, text opacity=1, text=white,
+        minimum width=2.9cm, minimum height=1.4cm, align=center] at (10.5,0)
+    {\sffamily\fontsize{24}{28}\selectfont\bfseries 9\\[-3pt]{\footnotesize Google Services}};
+\end{tikzpicture}
+\end{center}
+
+\vspace{1.0cm}
+
+% ── Metadata Card ──
 \begin{tcolorbox}[
-  enhanced, colback=white, colframe=cpblue!40,
-  boxrule=0.6pt, arc=4pt, left=10pt, right=10pt, top=8pt, bottom=8pt
+  enhanced, colback=white, colframe=cpgray!20,
+  boxrule=0.4pt, arc=5pt,
+  borderline west={3pt}{0pt}{cpteal},
+  left=12pt, right=12pt, top=10pt, bottom=10pt,
+  drop shadow
 ]
+\sffamily
 \begin{tabular}{@{}L{3.8cm} L{10cm}@{}}
-  \textbf{Submitted by}  & Ronit Sonawane \\
-  \textbf{Affiliation}   & B.Tech 1st Year, Computer Science \& Engineering, IIT Guwahati \\
-  \textbf{Team Size}     & Solo (Individual Submission) \\
-  \textbf{Repository}    & \href{https://github.com/ronits2407/civicpulse}{\tech{github.com/ronits2407/civicpulse}} \\
-  \textbf{Live App}      & \href{https://civicpulse-948264080742.asia-south1.run.app}{\tech{civicpulse-948264080742.asia-south1.run.app}} \\
-  \textbf{Deployment}    & Google Cloud Run \textbf{(asia-south1)} \\
-  \textbf{Date}          & June 2026 \\
+  \textbf{\color{cpblue}Submitted by}  & Ronit Sonawane \\
+  \textbf{\color{cpblue}Affiliation}   & B.Tech 1st Year, Computer Science \& Engineering, IIT Guwahati \\
+  \textbf{\color{cpblue}Team Size}     & Solo (Individual Submission) \\
+  \textbf{\color{cpblue}Repository}    & \href{https://github.com/ronits2407/civicpulse}{\tech{github.com/ronits2407/civicpulse}} \\
+  \textbf{\color{cpblue}Live App}      & \href{https://civicpulse-948264080742.asia-south1.run.app}{\tech{civicpulse-948264080742.asia-south1.run.app}} \\
+  \textbf{\color{cpblue}Deployment}    & Google Cloud Run \textbf{(asia-south1)} \\
+  \textbf{\color{cpblue}Date}          & June 2026 \\
 \end{tabular}
 \end{tcolorbox}
 
-\vspace{1.2cm}
-\begin{mdframed}[linecolor=cpteal, linewidth=0.8pt, leftmargin=0pt, rightmargin=0pt,
-  innerleftmargin=10pt, innerrightmargin=10pt, innertopmargin=8pt, innerbottommargin=8pt]
-\textbf{\color{cpteal}Abstract.} CivicPulse is a full-stack, AI-powered civic issue reporting platform designed for Indian cities. Citizens report infrastructure, sanitation, safety, utility, and environmental problems via text, photo, video, or voice. A six-agent LangGraph pipeline powered by Google Gemini 2.5 Flash and Pro automatically classifies, deduplicates, validates, generates resolution briefs, and predicts future civic hotspots. The platform is deployed live on Google Cloud Run with a complete CI/CD pipeline using GitHub Actions and Workload Identity Federation. It supports any typed language via automatic translation, community verification with quorum-based voting, karma gamification, TSP-optimised field team routing, and a fully featured admin dashboard.
-\end{mdframed}
+\vspace{0.6cm}
+
+% ── Abstract (pull-quote style) ──
+\begin{tcolorbox}[
+  enhanced, breakable,
+  colback=white, colframe=white,
+  borderline west={3pt}{0pt}{cpteal},
+  sharp corners, boxrule=0pt,
+  left=10pt, right=10pt, top=6pt, bottom=6pt
+]
+\textbf{\color{cpteal}\sffamily Abstract.} CivicPulse is a full-stack, AI-powered civic issue reporting platform designed for Indian cities. Citizens report infrastructure, sanitation, safety, utility, and environmental problems via text, photo, video, or voice. A six-agent LangGraph pipeline powered by Google Gemini 2.5 Flash and Pro automatically classifies, deduplicates, validates, generates resolution briefs, and predicts future civic hotspots. The platform is deployed live on Google Cloud Run with a complete CI/CD pipeline using GitHub Actions and Workload Identity Federation. It supports any typed language via automatic translation, community verification with quorum-based voting, karma gamification, TSP-optimised field team routing, and a fully featured admin dashboard.
+\end{tcolorbox}
 
 \vspace*{\fill}
+
+% ── Tech pills ──
 \begin{center}
-{\small\color{cpgray} Built with: Gemini 2.5 Flash/Pro · LangGraph · Next.js 16 · Supabase PostGIS+pgvector · Google Cloud Run · Mapbox GL}
+\pilltag{Gemini 2.5 Flash/Pro}\;\pilltag{LangGraph}\;\pilltag{Next.js 16}\;\pilltag{Supabase PostGIS+pgvector}\;\pilltag{Cloud Run}\;\pilltag{Mapbox GL}
 \end{center}
+\vspace{0.3cm}
 \end{titlepage}
 \thispagestyle{empty}
 \setcounter{page}{1}
@@ -192,6 +274,30 @@
 % ── TABLE OF CONTENTS ─────────────────────────────────────────
 \tableofcontents
 \clearpage
+
+% ── PROJECT HIGHLIGHTS ────────────────────────────────────────
+\begin{tcolorbox}[
+  enhanced, breakable,
+  colback=cpteal!4, colframe=cpteal!4,
+  borderline west={3.5pt}{0pt}{cpteal},
+  sharp corners, boxrule=0pt,
+  left=8pt, right=8pt, top=8pt, bottom=8pt,
+  drop shadow
+]
+{\sffamily\bfseries\color{cpteal}\large Project Highlights}
+\vspace{4pt}
+\begin{itemize}[leftmargin=1.2em, itemsep=3pt]
+  \item \textbf{Solo submission} by a 1st-year B.Tech student at IIT Guwahati
+  \item \textbf{6 AI agents} orchestrated by LangGraph with conditional branching and retry/resume
+  \item \textbf{3-layer deduplication:} pgvector cosine similarity + PostGIS spatial + Gemini semantic verification
+  \item \textbf{Any typed language supported} via automatic detection and translation (Agent 0)
+  \item \textbf{TSP-optimised routing} for municipal field teams via Google Maps Routes API
+  \item \textbf{Deployed live} on Google Cloud Run with zero-credential CI/CD (Workload Identity Federation)
+  \item \textbf{Community verification} with quorum-based voting and karma gamification
+  \item \textbf{Predictive hotspot analysis} using geographic DBSCAN clustering + Gemini 2.5 Pro
+\end{itemize}
+\end{tcolorbox}
+\vspace{6pt}
 
 % ── §0 EVALUATION CRITERIA QUICK REFERENCE ───────────────────
 \section*{Evaluation Criteria Quick Reference}
@@ -205,7 +311,8 @@ Judges: each row maps a scoring criterion to the sections where evidence is pres
 \vspace{6pt}
 \begin{tabularx}{\linewidth}{@{} L{4.5cm} C{1.8cm} X @{}}
 \toprule
-\textbf{Criterion} & \textbf{Weight} & \textbf{Key Sections} \\
+\rowcolor{cpblue}
+\thead{Criterion} & \thead{Weight} & \thead{Key Sections} \\
 \midrule
 Problem Solving \& Impact   & 20\% & §\ref{sec:problem} (Problem), §\ref{sec:solution} (Solution), §\ref{sec:ux} (User Story) \\
 Agentic Depth               & 20\% & §\ref{sec:agents} (All 6 agents, conditional edges, retry mechanism) \\
@@ -248,7 +355,8 @@ India has over \textbf{4,000 urban local bodies} serving 500 million urban citiz
 
 \begin{tabularx}{\linewidth}{@{} L{4.2cm} X @{}}
 \toprule
-\textbf{Problem} & \textbf{CivicPulse Solution} \\
+\rowcolor{cpblue}
+\thead{Problem} & \thead{CivicPulse Solution} \\
 \midrule
 Fragmented reporting     & Single platform: text, photo, video, GPS, and voice — all in one submission \\
 No intelligent triage    & 6-agent AI pipeline: classifies, deduplicates, validates, generates SLA deadlines \\
@@ -330,11 +438,7 @@ CivicPulse is a full-stack AI-powered civic reporting and resolution platform. I
 
 \subsection{Landing Page}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.88\linewidth]{s1_landing.jpg}
-\caption{CivicPulse landing page — role selection for citizens and municipal administrators}
-\end{figure}
+\screenshot[0.88\linewidth]{s1_landing.jpg}{CivicPulse landing page — role selection for citizens and municipal administrators}
 
 % ============================================================
 \section{System Architecture}
@@ -345,7 +449,8 @@ CivicPulse is a full-stack AI-powered civic reporting and resolution platform. I
 
 \begin{longtable}{@{} L{3cm} L{4cm} L{2.2cm} L{5.4cm} @{}}
 \toprule
-\textbf{Layer} & \textbf{Technology} & \textbf{Version} & \textbf{Purpose} \\
+\rowcolor{cpblue}
+\thead{Layer} & \thead{Technology} & \thead{Version} & \thead{Purpose} \\
 \midrule
 \endhead
 Framework          & Next.js App Router    & 16.2.9  & Full-stack React with Turbopack \\
@@ -438,7 +543,8 @@ Every issue has a \tech{pipeline\_stage} column updated in real time. The citize
 
 \begin{tabular}{@{} L{5.5cm} L{8.5cm} @{}}
 \toprule
-\textbf{Stage Value} & \textbf{Meaning} \\
+\rowcolor{cpblue}
+\thead{Stage Value} & \thead{Meaning} \\
 \midrule
 \tech{agent0\_translation}         & Language detection in progress \\
 \tech{agent1\_classifier}          & Classification in progress \\
@@ -530,7 +636,8 @@ Two-loop reasoning:
 \textbf{SLA matrix:}
 \begin{tabular}{@{} L{3.2cm} C{2.4cm} C{2.4cm} C{2.4cm} @{}}
 \toprule
-\textbf{Category} & \textbf{High (7–10)} & \textbf{Medium (4–6)} & \textbf{Low (1–3)} \\
+\rowcolor{cpblue}
+\thead{Category} & \thead{High (7\textendash 10)} & \thead{Medium (4\textendash 6)} & \thead{Low (1\textendash 3)} \\
 \midrule
 Infrastructure & 24 h & 72 h & 168 h \\
 Sanitation     & 12 h & 48 h & 96 h  \\
@@ -602,7 +709,7 @@ Photos uploaded with reports are analysed via Gemini's multimodal API. Images ar
 \end{itemize}
 
 \subsection{Google Artifact Registry}
-Docker images tagged with Git SHA pushed to \tech{asia-south1-docker.pkg.dev/civicpulse-500507/civicpulse-repo/civicpulse}.
+Docker images tagged with Git SHA pushed to \tech{asia-south1-docker.pkg.dev/\allowbreak civicpulse-500507/\allowbreak civicpulse-repo/\allowbreak civicpulse}.
 
 \subsection{Workload Identity Federation}
 The CI/CD pipeline authenticates to GCP with \textbf{zero stored credentials} — GitHub's OIDC token is exchanged for a short-lived GCP access token. Pool: \tech{projects/948264080742/locations/global/workloadIdentityPools/github-pool}. No service account JSON keys stored anywhere.
@@ -622,7 +729,8 @@ A single environment variable (\tech{AI\_PROVIDER=gemini} or \tech{ollama}) swit
 
 \begin{tabular}{@{} L{3.5cm} L{4.5cm} L{4.5cm} @{}}
 \toprule
-\textbf{Feature} & \textbf{Gemini (Default)} & \textbf{Ollama (Alternate)} \\
+\rowcolor{cpblue}
+\thead{Feature} & \thead{Gemini (Default)} & \thead{Ollama (Alternate)} \\
 \midrule
 Flash model     & \tech{gemini-2.5-flash}   & \tech{qwen3:30b-a3b} \\
 Pro model       & \tech{gemini-2.5-pro}     & \tech{qwen3:235b-a22b} \\
@@ -648,11 +756,62 @@ One command connects a developer's local GPU to a globally deployed cloud applic
 \subsection{Three-Layer Deduplication}
 No existing civic platform combines vector similarity, spatial proximity, and semantic AI verification. Each layer catches cases the others miss — see §\ref{sec:agent2} for details.
 
+\subsection{Universal Language Support (Agent 0)}
+India's linguistic diversity is a major barrier for civic engagement. CivicPulse breaks this barrier by running all inputs through \textbf{Agent 0}, which automatically detects the input language and translates it into English before it enters the main LangGraph pipeline. It supports \textit{any} language supported by Gemini. When the pipeline resolves, the final civic brief and status updates are translated back into the citizen's original language in the dashboard.
+
+\subsection{Predictive Hotspot Clustering (DBSCAN)}
+To identify emerging civic hotspots before they escalate, CivicPulse uses a custom geographic DBSCAN (Density-Based Spatial Clustering of Applications with Noise) algorithm. This is calculated directly in \file{lib/utils/clustering.ts} using the Haversine formula to account for the Earth's curvature.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    dot/.style={circle, fill=cpteal, inner sep=0pt, minimum size=6pt},
+    noise/.style={circle, draw=cpgray!60, fill=white, inner sep=0pt, minimum size=5pt},
+    core/.style={circle, fill=cpblue, inner sep=0pt, minimum size=8pt, drop shadow={opacity=0.3}},
+    halo/.style={circle, draw=cpblue!30, fill=cpblue!5, inner sep=0pt, minimum size=3cm}
+  ]
+  % Cluster 1
+  \node[halo] at (0,0) {};
+  \node[core, label=below:{\footnotesize Core Point}] at (0,0) {};
+  \node[dot] at (0.5, 0.4) {};
+  \node[dot] at (-0.6, 0.3) {};
+  \node[dot] at (0.2, -0.7) {};
+  \node[dot] at (-0.4, -0.5) {};
+  \node[dot] at (0.8, -0.2) {};
+  
+  % Cluster 2
+  \node[halo] at (4, 1.5) {};
+  \node[core] at (4, 1.5) {};
+  \node[dot] at (4.3, 1.8) {};
+  \node[dot] at (3.6, 1.9) {};
+  \node[dot] at (4.5, 1.1) {};
+  \node[dot] at (3.5, 1.2) {};
+  
+  % Noise points
+  \node[noise, label=above:{\footnotesize Noise}] at (2, 2.5) {};
+  \node[noise] at (2.5, -0.5) {};
+  \node[noise] at (-1.5, 1.5) {};
+  \node[noise] at (5.5, 0) {};
+  
+  % Connecting lines for epsilon neighborhood
+  \draw[dashed, cpblue!50] (0,0) -- (0.5, 0.4);
+  \draw[dashed, cpblue!50] (0,0) -- (0.8, -0.2) node[midway, below, font=\scriptsize\color{cpblue}] {$\varepsilon \le 50$m};
+  
+  % Annotations
+  \node[font=\sffamily\small\color{cpblue}, align=center] at (0, 1.8) {\textbf{Hotspot A}\\High density of issues};
+  \node[font=\sffamily\small\color{cpblue}, align=center] at (4, 3.3) {\textbf{Hotspot B}\\Emerging pattern};
+\end{tikzpicture}
+\caption{DBSCAN algorithm categorises closely grouped civic issues into actionable hotspots, while filtering out isolated noise incidents.}
+\end{figure}
+
+The algorithm identifies dense regions of issues (Core Points) within an $\varepsilon$-radius, groups them, and passes the aggregate data to Agent 5 (Gemini 2.5 Pro) to generate predictive maintenance alerts.
+
 \subsection{Karma Gamification}
 
 \begin{tabular}{@{} L{6cm} C{2cm} L{5cm} @{}}
 \toprule
-\textbf{Event} & \textbf{Points} & \textbf{Rationale} \\
+\rowcolor{cpblue}
+\thead{Event} & \thead{Points} & \thead{Rationale} \\
 \midrule
 Report an issue                  & +10 & Incentivise reporting \\
 Participate in community review  & +2  & Incentivise verification \\
@@ -706,31 +865,15 @@ CivicPulse is built with a \textbf{mobile-first approach} — every screen is de
 
 \subsection{Key Screens}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s2_login.jpg}
-\caption{Login — Google OAuth + email magic link}
-\end{figure}
+\screenshot[0.85\linewidth]{s2_login.jpg}{Login — Google OAuth + email magic link}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s3_report_top.jpg}
-\caption{Report page — text input + voice button}
-\end{figure}
+\screenshot[0.85\linewidth]{s3_report_top.jpg}{Report page — text input + voice button}
 
 \clearpage
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s4_report_bottom.jpg}
-\caption{Report page — image upload, webcam, GPS map}
-\end{figure}
+\screenshot[0.85\linewidth]{s4_report_bottom.jpg}{Report page — image upload, webcam, GPS map}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s5_dashboard.jpg}
-\caption{Citizen dashboard — issue cards with pipeline stepper}
-\end{figure}
+\screenshot[0.85\linewidth]{s5_dashboard.jpg}{Citizen dashboard — issue cards with pipeline stepper}
 
 \clearpage
 
@@ -761,45 +904,21 @@ CivicPulse is built with a \textbf{mobile-first approach} — every screen is de
 
 \clearpage
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s7_community_review.jpg}
-\caption{Community verification — verify/deny panel}
-\end{figure}
+\screenshot[0.85\linewidth]{s7_community_review.jpg}{Community verification — verify/deny panel}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s8_admin_inbox.jpg}
-\caption{Admin dashboard — issue inbox with filters}
-\end{figure}
+\screenshot[0.85\linewidth]{s8_admin_inbox.jpg}{Admin dashboard — issue inbox with filters}
 
 \clearpage
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s9_admin_map.jpg}
-\caption{Admin map — India-wide issue clusters}
-\end{figure}
+\screenshot[0.85\linewidth]{s9_admin_map.jpg}{Admin map — India-wide issue clusters}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s10_agent5.jpg}
-\caption{Agent 5 predictive alerts panel}
-\end{figure}
+\screenshot[0.85\linewidth]{s10_agent5.jpg}{Agent 5 predictive alerts panel}
 
 \clearpage
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s11_route_planner.jpg}
-\caption{Route Planner — cluster selection + TSP route}
-\end{figure}
+\screenshot[0.85\linewidth]{s11_route_planner.jpg}{Route Planner — cluster selection + TSP route}
 
-\begin{figure}[H]
-\centering
-\includegraphics[width=0.85\linewidth]{s12_agent2_map.jpg}
-\caption{Agent 2 deduplication map — cluster visualisation}
-\end{figure}
+\screenshot[0.85\linewidth]{s12_agent2_map.jpg}{Agent 2 deduplication map — cluster visualisation}
 
 \clearpage
 
@@ -827,7 +946,8 @@ Consider \textbf{Sunita}, a homemaker in Nashik who writes only in Marathi:
 
 \begin{tabular}{@{} L{5.5cm} L{8.5cm} @{}}
 \toprule
-\textbf{Feature} & \textbf{Benefit} \\
+\rowcolor{cpblue}
+\thead{Feature} & \thead{Benefit} \\
 \midrule
 Type in any language            & Agent 0 automatically translates; no English required \\
 Voice input (English)           & Citizens can speak in English; text is transcribed by the browser's Web Speech API \\
@@ -856,7 +976,8 @@ Single point of contact for all AI operations with four exported functions:
 
 \begin{tabular}{@{} L{5.5cm} L{4cm} L{4cm} @{}}
 \toprule
-\textbf{Function} & \textbf{Purpose} & \textbf{Used By} \\
+\rowcolor{cpblue}
+\thead{Function} & \thead{Purpose} & \thead{Used By} \\
 \midrule
 \tech{generateStructuredJSON<T>(...)} & Typed JSON from LLM & All 6 agents \\
 \tech{analyzeImage(url, prompt)} & Multimodal vision & Agent 1 \\
@@ -871,7 +992,8 @@ Single point of contact for all AI operations with four exported functions:
 
 \begin{tabular}{@{} L{4.5cm} L{4cm} L{5.5cm} @{}}
 \toprule
-\textbf{Client} & \textbf{Auth Level} & \textbf{Usage} \\
+\rowcolor{cpblue}
+\thead{Client} & \thead{Auth Level} & \thead{Usage} \\
 \midrule
 \tech{createClient()} & Anon key (RLS) & Browser components \\
 \tech{createServerSupabaseClient()} & Anon + cookie session & Server components, API routes \\
@@ -944,7 +1066,8 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 
 \begin{tabular}{@{} L{5.5cm} L{8.5cm} @{}}
 \toprule
-\textbf{Function} & \textbf{Purpose} \\
+\rowcolor{cpblue}
+\thead{Function} & \thead{Purpose} \\
 \midrule
 \tech{match\_issues(embedding, threshold, count)} & pgvector cosine similarity search — returns top N issues above threshold \\
 \tech{issues\_within\_radius(lat, lng, radius, category)} & PostGIS \tech{ST\_DWithin} — spatial proximity search \\
@@ -968,18 +1091,18 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-  step/.style={rounded corners=3pt, draw=cpblue!60, fill=cpblue!7,
+  stepbox/.style={rounded corners=3pt, draw=cpblue!60, fill=cpblue!7,
                minimum height=0.75cm, minimum width=2.8cm, align=center, font=\footnotesize},
   cloud/.style={rounded corners=3pt, draw=cpteal!60, fill=cpteal!8,
                 minimum height=0.75cm, minimum width=2.6cm, align=center, font=\footnotesize},
   arr/.style={-Stealth, thick, cpgray!60},
   node distance=0.45cm
 ]
-\node[step] (push) {git push → prod};
-\node[step, right=0.5cm of push] (checkout) {Checkout};
-\node[step, right=0.5cm of checkout] (auth) {WIF Auth\\\tiny(no keys)};
-\node[step, right=0.5cm of auth] (env) {Inject .env};
-\node[step, below=0.5cm of env] (build) {Docker Build\\\tiny(multi-stage)};
+\node[stepbox] (push) {git push → prod};
+\node[stepbox, right=0.5cm of push] (checkout) {Checkout};
+\node[stepbox, right=0.5cm of checkout] (auth) {WIF Auth\\\tiny(no keys)};
+\node[stepbox, right=0.5cm of auth] (env) {Inject .env};
+\node[stepbox, below=0.5cm of env] (build) {Docker Build\\\tiny(multi-stage)};
 \node[cloud, left=0.5cm of build] (push2) {Push to\\\tiny Artifact Registry};
 \node[cloud, left=0.5cm of push2] (deploy) {Deploy\\\tiny Cloud Run};
 
@@ -999,7 +1122,8 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 
 \begin{tabular}{@{} L{2cm} L{3.5cm} L{8.5cm} @{}}
 \toprule
-\textbf{Stage} & \textbf{Base Image} & \textbf{Purpose} \\
+\rowcolor{cpblue}
+\thead{Stage} & \thead{Base Image} & \thead{Purpose} \\
 \midrule
 \tech{deps}    & \tech{node:20-alpine} & Install Bun, run \tech{bun install --frozen-lockfile} \\
 \tech{builder} & \tech{node:20-alpine} & Copy source, set \tech{NEXT\_PUBLIC\_*} build args, run \tech{bun run build} \\
@@ -1018,7 +1142,8 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 
 \begin{tabular}{@{} C{0.6cm} L{4cm} L{9.4cm} @{}}
 \toprule
-\textbf{\#} & \textbf{Feature} & \textbf{Implementation} \\
+\rowcolor{cpblue}
+\thead{\#} & \thead{Feature} & \thead{Implementation} \\
 \midrule
 1 & Authenticate         & Google OAuth or email magic link via Supabase Auth \\
 2 & Report issue         & Text (any language), photo/video (file, drag-drop, webcam), voice (English), GPS or map picker \\
@@ -1036,7 +1161,8 @@ Supabase returns geography columns as hex-encoded WKB. Four routes decode via \t
 
 \begin{tabular}{@{} C{0.6cm} L{4cm} L{9.4cm} @{}}
 \toprule
-\textbf{\#} & \textbf{Feature} & \textbf{Implementation} \\
+\rowcolor{cpblue}
+\thead{\#} & \thead{Feature} & \thead{Implementation} \\
 \midrule
 1 & Admin login          & Google OAuth with \tech{role=admin} parameter \\
 2 & Issue inbox          & Filterable issue list with real-time updates \\
@@ -1061,17 +1187,18 @@ Twelve dedicated test files in \file{tests/}: agents 1–4, DB connectivity, geo
 
 \begin{longtable}{@{} L{4cm} L{3.5cm} L{3.5cm} L{3cm} @{}}
 \toprule
-\textbf{Feature} & \textbf{Municipal Portals} & \textbf{311 Apps (US)} & \textbf{CivicPulse} \\
+\rowcolor{cpblue}
+\thead{Feature} & \thead{Municipal Portals} & \thead{311 Apps (US)} & \thead{CivicPulse} \\
 \midrule
 \endhead
-AI classification        & No              & Keyword matching    & 6-agent LangGraph + Gemini \\
-Duplicate detection      & No              & Text matching only  & Vector + spatial + AI \\
-Multilingual (typed)     & Separate portals & English only       & Auto-detect + translate \\
-Predictive analytics     & No              & No                  & Geographic DBSCAN + Gemini Pro \\
-Community verification   & No              & No                  & Quorum-based + karma \\
-Real-time tracking       & Email only      & Push notifications  & Supabase Realtime \\
-Route optimisation       & No              & No                  & Google Maps TSP \\
-Mobile-first design      & Rarely          & Some                & Full mobile-first + OLED \\
+AI classification        & \textbf{\color{cpgray}--}              & Keyword matching    & \textbf{6-agent LangGraph + Gemini} \\
+Duplicate detection      & \textbf{\color{cpgray}--}              & Text matching only  & \textbf{Vector + spatial + AI} \\
+Multilingual (typed)     & Separate portals & English only       & \textbf{Auto-detect + translate} \\
+Predictive analytics     & \textbf{\color{cpgray}--}              & \textbf{\color{cpgray}--}                  & \textbf{Geographic DBSCAN + Gemini Pro} \\
+Community verification   & \textbf{\color{cpgray}--}              & \textbf{\color{cpgray}--}                  & \textbf{Quorum-based + karma} \\
+Real-time tracking       & Email only      & Push notifications  & \textbf{Supabase Realtime} \\
+Route optimisation       & \textbf{\color{cpgray}--}              & \textbf{\color{cpgray}--}                  & \textbf{Google Maps TSP} \\
+Mobile-first design      & Rarely          & Some                & \textbf{Full mobile-first + OLED} \\
 \bottomrule
 \end{longtable}
 
@@ -1080,7 +1207,8 @@ Mobile-first design      & Rarely          & Some                & Full mobile-f
 
 \begin{tabular}{@{} L{2cm} L{4cm} L{8cm} @{}}
 \toprule
-\textbf{Priority} & \textbf{Feature} & \textbf{Description} \\
+\rowcolor{cpblue}
+\thead{Priority} & \thead{Feature} & \thead{Description} \\
 \midrule
 High   & WhatsApp Integration      & Citizens report via WhatsApp (text+photo+location) → same pipeline via webhook \\
 High   & Web Push Notifications    & Infrastructure already in place (VAPID keys, push\_subscription column) \\
@@ -1102,7 +1230,8 @@ Low    & Multi-City Support        & Configuration-driven city selection with pe
 
 \begin{tabular}{@{} L{6cm} C{1cm} L{7cm} @{}}
 \toprule
-\textbf{File} & \textbf{Lines} & \textbf{Purpose} \\
+\rowcolor{cpblue}
+\thead{File} & \thead{Lines} & \thead{Purpose} \\
 \midrule
 \file{app/layout.tsx}                        & 26  & Root layout: Inter, dark mode, Toaster \\
 \file{app/page.tsx}                          & 32  & Landing: role selection, auth redirect \\
@@ -1119,7 +1248,8 @@ Low    & Multi-City Support        & Configuration-driven city selection with pe
 
 \begin{tabular}{@{} L{7cm} C{1cm} L{6cm} @{}}
 \toprule
-\textbf{File} & \textbf{Lines} & \textbf{Purpose} \\
+\rowcolor{cpblue}
+\thead{File} & \thead{Lines} & \thead{Purpose} \\
 \midrule
 \file{api/reports/process/route.ts}          & 88  & Pipeline entry: insert + embed + run \\
 \file{api/reports/retry/route.ts}            & 109 & Resume failed pipeline \\
@@ -1137,7 +1267,8 @@ Low    & Multi-City Support        & Configuration-driven city selection with pe
 
 \begin{tabular}{@{} L{6.5cm} C{1cm} L{6.5cm} @{}}
 \toprule
-\textbf{File} & \textbf{Lines} & \textbf{Purpose} \\
+\rowcolor{cpblue}
+\thead{File} & \thead{Lines} & \thead{Purpose} \\
 \midrule
 \file{lib/ai/client.ts}                       & 318 & Unified AI: Gemini + Ollama, 4 functions \\
 \file{lib/agents/agent0-translation.ts}        & 79  & Language detection + translation \\
@@ -1155,11 +1286,20 @@ Low    & Multi-City Support        & Configuration-driven city selection with pe
 % ── BACK COVER / CLOSING ─────────────────────────────────────
 \vspace*{\fill}
 \begin{center}
-\begin{tikzpicture}
-  \fill[cpblue!10] (-8,-0.6) rectangle (8, 0.6);
-  \node[font=\small\color{cpgray}] at (0,0.15) {CivicPulse — Problem Statement 2: Community Hero — Hyperlocal Problem Solver};
-  \node[font=\footnotesize\color{cpgray!70}] at (0,-0.2) {Submitted by Ronit Sonawane · B.Tech CSE, IIT Guwahati · June 2026};
-\end{tikzpicture}
+\begin{tcolorbox}[
+  enhanced, colback=cpblue!4, colframe=cpblue!8,
+  boxrule=0.5pt, arc=6pt,
+  left=15pt, right=15pt, top=12pt, bottom=12pt,
+  width=0.85\linewidth,
+  drop shadow={shadow xshift=0mm, shadow yshift=-1mm, opacity=0.15}
+]
+\centering
+{\sffamily\bfseries\color{cpblue}\large CivicPulse}\\[4pt]
+{\sffamily\color{cpgray}\small Problem Statement 2: Community Hero — Hyperlocal Problem Solver}\\[10pt]
+{\color{cpteal}\rule{0.4\linewidth}{0.8pt}}\\[10pt]
+{\sffamily\footnotesize\color{cpgray}Submitted by \textbf{Ronit Sonawane} · B.Tech CSE, IIT Guwahati}\\[2pt]
+{\sffamily\scriptsize\color{cpgray!80}\href{https://github.com/ronits2407/civicpulse}{github.com/ronits2407/civicpulse} \quad |\quad June 2026}
+\end{tcolorbox}
 \end{center}
 
 \end{document}

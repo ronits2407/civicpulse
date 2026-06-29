@@ -226,7 +226,7 @@ while ($true) {
                 $serviceJson = $serviceJsonStr | ConvertFrom-Json
                 
                 # Check Throttling
-                $annotations = $serviceJson.metadata.annotations
+                $annotations = $serviceJson.spec.template.metadata.annotations
                 $isThrottled = "false"
                 if ($null -ne $annotations -and $annotations."run.googleapis.com/cpu-throttling" -eq "true") {
                     $isThrottled = "true"

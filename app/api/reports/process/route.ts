@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     after(() => {
       pipeline.invoke(initialState as any).catch(async (err) => {
         console.error('Pipeline Background Error:', err)
-        await supabase.from('issues').update({ pipeline_stage: 'failed', error: err.message }).eq('id', issue.id)
+        await supabase.from('issues').update({ pipeline_stage: 'failed' }).eq('id', issue.id)
       })
     })
 

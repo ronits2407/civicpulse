@@ -505,7 +505,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
             if (updatedIssue.pipeline_stage === 'failed' || updatedIssue.pipeline_stage?.endsWith('_failed')) {
               toast.error('Pipeline Failed', {
-                description: updatedIssue.error || `Error processing "${updatedIssue.title || 'your report'}". Please try again.`,
+                description: `Error processing "${updatedIssue.title || 'your report'}". Please try again.`,
               })
             } else {
               toast.info('Status Updated', {

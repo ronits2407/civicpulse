@@ -44,7 +44,6 @@ export interface Issue {
   sla_deadline: string | null
   resolved_at: string | null
   agent5_completed?: boolean
-  error?: string | null
   created_at: string
 }
 

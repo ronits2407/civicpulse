@@ -16,13 +16,14 @@ function Show-Menu {
     Write-Host "8. Stop Local Cloudflare Tunnel" -ForegroundColor Red
     Write-Host "9. Start Ollama Server (New Window)" -ForegroundColor Magenta
     Write-Host "10. Change AI Provider (Gemini / Ollama)" -ForegroundColor Magenta
-    Write-Host "11. Exit"
+    Write-Host "11. [Status] Query Cloud Run Deployment Status (Throttling, Visibility, Env)" -ForegroundColor Cyan
+    Write-Host "12. Exit"
     Write-Host ""
 }
 
 while ($true) {
     Show-Menu
-    $choice = Read-Host "Select an option (1-11)"
+    $choice = Read-Host "Select an option (1-12)"
 
     switch ($choice) {
         "1" {
@@ -116,16 +117,17 @@ while ($true) {
             $newApiUrl = "$tunnelUrl/v1"
             Write-Host "[+] Tunnel established! URL: $newApiUrl" -ForegroundColor Green
             
-            Write-Host "[*] Updating .env.production..." -ForegroundColor Cyan
-            $envPath = ".env.production"
-            if (Test-Path $envPath) {
-                $envContent = Get-Content $envPath -Raw
-                $envContent = $envContent -replace "OLLAMA_BASE_URL=.*", "OLLAMA_BASE_URL=$newApiUrl"
-                $envContent = $envContent -replace "OLLAMA_LOCAL_BASE_URL=.*", "OLLAMA_LOCAL_BASE_URL=$newApiUrl"
-                Set-Content -Path $envPath -Value $envContent
-                Write-Host "[+] .env.production updated successfully." -ForegroundColor Green
-            } else {
-                Write-Host "[-] .env.production not found. Skipping." -ForegroundColor Yellow
+            Write-Host "[*] Updating .env.production and .env.local..." -ForegroundColor Cyan
+            foreach ($envPath in @(".env.production", ".env.local")) {
+                if (Test-Path $envPath) {
+                    $envContent = Get-Content $envPath -Raw
+                    $envContent = $envContent -replace "OLLAMA_BASE_URL=.*", "OLLAMA_BASE_URL=$newApiUrl"
+                    $envContent = $envContent -replace "OLLAMA_LOCAL_BASE_URL=.*", "OLLAMA_LOCAL_BASE_URL=$newApiUrl"
+                    Set-Content -Path $envPath -Value $envContent
+                    Write-Host "[+] $envPath updated successfully." -ForegroundColor Green
+                } else {
+                    Write-Host "[-] $envPath not found. Skipping." -ForegroundColor Yellow
+                }
             }
             
             Write-Host "[*] Pushing new URL to GitHub Secrets..." -ForegroundColor Cyan
@@ -182,18 +184,20 @@ while ($true) {
                 continue
             }
 
-            Write-Host "[*] Updating .env.production..." -ForegroundColor Cyan
-            if (Test-Path $envPath) {
-                $envContent = Get-Content $envPath -Raw
-                if ($envContent -match "AI_PROVIDER=") {
-                    $envContent = $envContent -replace "AI_PROVIDER=.*", "AI_PROVIDER=$provider"
+            Write-Host "[*] Updating .env.production and .env.local..." -ForegroundColor Cyan
+            foreach ($path in @(".env.production", ".env.local")) {
+                if (Test-Path $path) {
+                    $envContent = Get-Content $path -Raw
+                    if ($envContent -match "AI_PROVIDER=") {
+                        $envContent = $envContent -replace "AI_PROVIDER=.*", "AI_PROVIDER=$provider"
+                    } else {
+                        $envContent = $envContent + "`nAI_PROVIDER=$provider"
+                    }
+                    Set-Content -Path $path -Value $envContent
+                    Write-Host "[+] $path updated successfully to AI_PROVIDER=$provider." -ForegroundColor Green
                 } else {
-                    $envContent = $envContent + "`nAI_PROVIDER=$provider"
+                    Write-Host "[-] $path not found. Skipping local file update." -ForegroundColor Yellow
                 }
-                Set-Content -Path $envPath -Value $envContent
-                Write-Host "[+] .env.production updated successfully to AI_PROVIDER=$provider." -ForegroundColor Green
-            } else {
-                Write-Host "[-] .env.production not found. Skipping local file update." -ForegroundColor Yellow
             }
 
             Write-Host "[*] Pushing updated environment to GitHub Secrets..." -ForegroundColor Cyan
@@ -215,11 +219,77 @@ while ($true) {
             Start-Sleep -Seconds 3
         }
         "11" {
+            Write-Host "`n[*] Querying Cloud Run Deployment Status..." -ForegroundColor Cyan
+            Write-Host "[*] Fetching service details..." -ForegroundColor Yellow
+            $serviceJsonStr = gcloud run services describe civicpulse --region asia-south1 --format="json"
+            if ($null -ne $serviceJsonStr -and $serviceJsonStr.Trim() -ne "") {
+                $serviceJson = $serviceJsonStr | ConvertFrom-Json
+                
+                # Check Throttling
+                $annotations = $serviceJson.metadata.annotations
+                $isThrottled = "false"
+                if ($null -ne $annotations -and $annotations."run.googleapis.com/cpu-throttling" -eq "true") {
+                    $isThrottled = "true"
+                }
+                
+                # Check Visibility (IAM Policy)
+                $iamPolicyStr = gcloud run services get-iam-policy civicpulse --region asia-south1 --format="json"
+                $isPublic = $false
+                if ($null -ne $iamPolicyStr -and $iamPolicyStr.Trim() -ne "") {
+                    $iamPolicy = $iamPolicyStr | ConvertFrom-Json
+                    if ($null -ne $iamPolicy.bindings) {
+                        foreach ($binding in $iamPolicy.bindings) {
+                            if ($binding.role -eq "roles/run.invoker" -and "allUsers" -in $binding.members) {
+                                $isPublic = $true
+                                break
+                            }
+                        }
+                    }
+                }
+                
+                # Check Env Vars
+                $envVars = $serviceJson.spec.template.spec.containers[0].env
+                $aiProvider = "unknown"
+                $ollamaUrl = "not set"
+                if ($null -ne $envVars) {
+                    foreach ($env in $envVars) {
+                        if ($env.name -eq "AI_PROVIDER") {
+                            $aiProvider = $env.value
+                        }
+                        if ($env.name -eq "OLLAMA_BASE_URL") {
+                            $ollamaUrl = $env.value
+                        }
+                    }
+                }
+                
+                Write-Host "`n--- Deployment Status ---" -ForegroundColor Green
+                Write-Host "Service Name   : $($serviceJson.metadata.name)"
+                Write-Host "URL            : $($serviceJson.status.url)"
+                if ($isThrottled -eq "true") {
+                    Write-Host "CPU Throttling : ENABLED (Bill Saving Mode)" -ForegroundColor Yellow
+                } else {
+                    Write-Host "CPU Throttling : DISABLED (Always On)" -ForegroundColor Green
+                }
+                if ($isPublic) {
+                    Write-Host "Visibility     : PUBLIC (allUsers can invoke)" -ForegroundColor Green
+                } else {
+                    Write-Host "Visibility     : PRIVATE (Requires authentication)" -ForegroundColor Yellow
+                }
+                Write-Host "AI Provider    : $aiProvider"
+                Write-Host "Ollama URL     : $ollamaUrl"
+                Write-Host "-------------------------" -ForegroundColor Green
+            } else {
+                Write-Host "[x] Failed to retrieve service details." -ForegroundColor Red
+            }
+            Write-Host "`nPress Enter to continue..."
+            Read-Host
+        }
+        "12" {
             Write-Host "`nExiting..."
             exit 0
         }
         default {
-            Write-Host "`n[!] Invalid choice. Please select 1-11." -ForegroundColor Red
+            Write-Host "`n[!] Invalid choice. Please select 1-12." -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }

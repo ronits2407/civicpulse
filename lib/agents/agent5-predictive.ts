@@ -112,8 +112,9 @@ export async function analyzePredictiveCluster(cluster: any) {
   const prompt = `Cluster Location: lat ${cluster.centroid.lat}, lng ${cluster.centroid.lng}\nHistorical Issues in cluster:\n${JSON.stringify(clusterSummary, null, 2)}`;
 
   try {
-    // Use Pro model for Agent 5 as per rules
-    const predictions = await generateStructuredJSON<PredictiveAlertOutput[]>(prompt, SYSTEM_PROMPT, true);
+    // Use Pro model for Agent 5 as per rules, unless overridden by env var
+    const usePro = process.env.GEMINI_AGENT5_MODEL !== 'flash';
+    const predictions = await generateStructuredJSON<PredictiveAlertOutput[]>(prompt, SYSTEM_PROMPT, usePro);
 
     // 5. Insert predictions into database
     for (const pred of predictions) {

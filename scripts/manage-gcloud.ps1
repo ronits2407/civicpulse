@@ -18,12 +18,13 @@ function Show-Menu {
     Write-Host "10. Change AI Provider (Gemini / Ollama)" -ForegroundColor Magenta
     Write-Host "11. [Status] Query Cloud Run Deployment Status (Throttling, Visibility, Env)" -ForegroundColor Cyan
     Write-Host "12. Exit"
+    Write-Host "13. Change Gemini Model for Agent 5 (Flash / Pro)" -ForegroundColor Magenta
     Write-Host ""
 }
 
 while ($true) {
     Show-Menu
-    $choice = Read-Host "Select an option (1-12)"
+    $choice = Read-Host "Select an option (1-13)"
 
     switch ($choice) {
         "1" {
@@ -288,8 +289,68 @@ while ($true) {
             Write-Host "`nExiting..."
             exit 0
         }
+        "13" {
+            Write-Host "`n[*] Changing Gemini Model for Agent 5..." -ForegroundColor Cyan
+            $envPath = ".env.production"
+            $currentAgent5Model = "pro"
+            if (Test-Path $envPath) {
+                $envContent = Get-Content $envPath -Raw
+                if ($envContent -match "GEMINI_AGENT5_MODEL=([a-zA-Z0-9_-]+)") {
+                    $currentAgent5Model = $Matches[1]
+                }
+            }
+            Write-Host "Current Agent 5 Model is: $currentAgent5Model" -ForegroundColor Yellow
+            Write-Host "Select new Gemini Model for Agent 5:"
+            Write-Host "1. Gemini Flash (Base version - Faster, avoids API limits)" -ForegroundColor Green
+            Write-Host "2. Gemini Pro (Advanced version - May hit API limits)" -ForegroundColor Red
+            $modelChoice = Read-Host "Select (1-2)"
+            $model = $null
+            if ($modelChoice -eq "1") {
+                $model = "flash"
+            } elseif ($modelChoice -eq "2") {
+                $model = "pro"
+            } else {
+                Write-Host "[x] Invalid selection. Cancelling." -ForegroundColor Red
+                Start-Sleep -Seconds 2
+                continue
+            }
+
+            Write-Host "[*] Updating .env.production and .env.local..." -ForegroundColor Cyan
+            foreach ($path in @(".env.production", ".env.local")) {
+                if (Test-Path $path) {
+                    $envContent = Get-Content $path -Raw
+                    if ($envContent -match "GEMINI_AGENT5_MODEL=") {
+                        $envContent = $envContent -replace "GEMINI_AGENT5_MODEL=.*", "GEMINI_AGENT5_MODEL=$model"
+                    } else {
+                        $envContent = $envContent + "`nGEMINI_AGENT5_MODEL=$model"
+                    }
+                    Set-Content -Path $path -Value $envContent
+                    Write-Host "[+] $path updated successfully to GEMINI_AGENT5_MODEL=$model." -ForegroundColor Green
+                } else {
+                    Write-Host "[-] $path not found. Skipping local file update." -ForegroundColor Yellow
+                }
+            }
+
+            Write-Host "[*] Pushing updated environment to GitHub Secrets..." -ForegroundColor Cyan
+            if (Test-Path $envPath) {
+                if (Get-Command gh -ErrorAction SilentlyContinue) {
+                    Get-Content $envPath -Raw | gh secret set ENV_PRODUCTION
+                    Write-Host "[+] GitHub Secrets updated." -ForegroundColor Green
+                } else {
+                    Write-Host "[-] GitHub CLI (gh) not found. Skipping GitHub Secrets update." -ForegroundColor Yellow
+                }
+            } else {
+                Write-Host "[-] .env.production not found. Skipping GitHub Secrets update." -ForegroundColor Yellow
+            }
+
+            Write-Host "[*] Updating Cloud Run service environment variables..." -ForegroundColor Cyan
+            gcloud run services update civicpulse --region asia-south1 --update-env-vars="GEMINI_AGENT5_MODEL=$model" --quiet
+            Write-Host "[+] Cloud Run environment updated successfully!" -ForegroundColor Green
+
+            Start-Sleep -Seconds 3
+        }
         default {
-            Write-Host "`n[!] Invalid choice. Please select 1-12." -ForegroundColor Red
+            Write-Host "`n[!] Invalid choice. Please select 1-13." -ForegroundColor Red
             Start-Sleep -Seconds 2
         }
     }

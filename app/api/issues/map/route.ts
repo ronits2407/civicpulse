@@ -11,7 +11,7 @@ export async function GET() {
     const { data, error } = await supabase
       .from('issues')
       .select('id, title, category, status, address, location, cluster_id, severity, created_at')
-      .not('status', 'eq', 'closed')
+      .or('status.neq.closed,cluster_id.not.is.null')
       .order('created_at', { ascending: false })
       .limit(500)
 

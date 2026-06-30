@@ -319,7 +319,7 @@ function Agent3Visuals({ isRunning, issue }: { isRunning: boolean, issue: any })
   return (
     <div className="mt-4 bg-black/40 border border-border rounded-xl p-4 sm:p-6 overflow-hidden relative">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-2 relative z-20">
-        
+
         {/* Step 1: Weather */}
         <div className={`flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 w-24 ${skipWeather ? 'opacity-50' : 'opacity-100'}`}>
           <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isRunning ? 'bg-[#0969da]/20 text-[#0969da] animate-pulse ring-2 ring-[#0969da]/50' : skipWeather ? 'bg-muted/50 text-muted-foreground ring-1 ring-border' : 'bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/50'}`}>
@@ -375,7 +375,7 @@ function Agent4Visuals({ isRunning }: { isRunning: boolean }) {
   return (
     <div className="mt-4 bg-black/40 border border-border rounded-xl p-4 sm:p-6 overflow-hidden relative">
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-2 relative z-20">
-        
+
         {/* Step 1: SOP Search */}
         <div className="flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 opacity-100 w-24">
           <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${isRunning ? 'bg-teal-500/20 text-teal-400 border-teal-500/50 shadow-[0_0_10px_rgba(45,212,191,0.3)] animate-pulse' : 'bg-emerald-500/20 text-emerald-500 border-emerald-500/50'}`}>
@@ -449,7 +449,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
     if (typeof window !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => {} // silently fall back to Nashik center in the map component
+        () => { } // silently fall back to Nashik center in the map component
       )
     }
   }, [])
@@ -481,14 +481,14 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
             const denies = data.filter(v => !v.verdict).length
             setVoteTally({ confirms, denies })
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       fetchTally()
     } else {
       setVoteTally(null)
     }
   }, [selectedIssue])
-  
+
   const fetchNearbyReviews = async () => {
     if (!profile?.home_location) return
     setIsFetchingReviews(true)
@@ -539,7 +539,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
         try {
           const lat = position.coords.latitude
           const lng = position.coords.longitude
-          
+
           // Reverse geocode to get city/state
           let address = null
           try {
@@ -840,9 +840,9 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
             </Button>
 
             {/* Mini Map Widget */}
-            <MiniMapWidget 
-              onOpenFullMap={() => { setIsMapOpen(true); setIsLeaderboardOpen(false); setSelectedIssue(null); }} 
-              userLocation={userLocation} 
+            <MiniMapWidget
+              onOpenFullMap={() => { setIsMapOpen(true); setIsLeaderboardOpen(false); setSelectedIssue(null); }}
+              userLocation={userLocation}
             />
 
             {/* Leaderboard Button */}
@@ -948,18 +948,18 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                         </div>
                       )}
                       <div className="flex gap-2 mt-1">
-                        <Button 
-                          onClick={() => handleVote(review.id, true)} 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          onClick={() => handleVote(review.id, true)}
+                          size="sm"
+                          variant="outline"
                           className="flex-1 bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 hover:text-emerald-400 border-emerald-500/30 text-[11px] h-8"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 mr-1.5" /> Confirm
                         </Button>
-                        <Button 
-                          onClick={() => handleVote(review.id, false)} 
-                          size="sm" 
-                          variant="outline" 
+                        <Button
+                          onClick={() => handleVote(review.id, false)}
+                          size="sm"
+                          variant="outline"
                           className="flex-1 bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 hover:text-rose-400 border-rose-500/30 text-[11px] h-8"
                         >
                           <AlertCircle className="w-3.5 h-3.5 mr-1.5" /> Deny
@@ -1004,8 +1004,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                       aria-selected={statusFilter === tab.id}
                       onClick={() => setStatusFilter(tab.id)}
                       className={`flex-1 text-center text-[10px] font-semibold py-1.5 rounded-lg transition-all focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none ${statusFilter === tab.id
-                          ? 'bg-card text-[#0969da] border border-slate-850 shadow-sm'
-                          : 'text-muted-foreground hover:text-muted-foreground'
+                        ? 'bg-card text-[#0969da] border border-slate-850 shadow-sm'
+                        : 'text-muted-foreground hover:text-muted-foreground'
                         }`}
                     >
                       {tab.label}
@@ -1020,8 +1020,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                   aria-pressed={categoryFilter === 'all'}
                   onClick={() => setCategoryFilter('all')}
                   className={`text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none ${categoryFilter === 'all'
-                      ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
-                      : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
+                    ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
+                    : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
                     }`}
                 >
                   All Categories
@@ -1035,8 +1035,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                       aria-pressed={isActive}
                       onClick={() => setCategoryFilter(key)}
                       className={`flex items-center gap-1.5 text-[10px] font-semibold px-3 py-1 rounded-full border transition-all whitespace-nowrap focus-visible:ring-2 focus-visible:ring-[#0969da] focus-visible:outline-none ${isActive
-                          ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
-                          : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
+                        ? 'bg-white text-slate-950 border-white font-bold shadow-sm'
+                        : 'bg-background/40 text-muted-foreground border-border hover:text-muted-foreground'
                         }`}
                     >
                       <Icon className="w-3 h-3" />
@@ -1247,23 +1247,23 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     </div>
                     {/* Title & Badges */}
                     <div className="flex flex-col gap-1.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-1">
-                      <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground leading-none">
-                        {selectedIssue.title || 'Untitled Report'}
-                      </DialogTitle>
-                      
-                      {(() => {
-                        const cat = CATEGORY_DETAILS[selectedIssue.category]
-                        if (!cat) return null
-                        const Icon = cat.icon
-                        return (
-                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${cat.color} ${cat.bgColor} ${cat.borderColor} w-fit`}>
-                            <Icon className="w-3.5 h-3.5" />
-                            {cat.label}
-                          </div>
-                        )
-                      })()}
-                    </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-1">
+                        <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground leading-none">
+                          {selectedIssue.title || 'Untitled Report'}
+                        </DialogTitle>
+
+                        {(() => {
+                          const cat = CATEGORY_DETAILS[selectedIssue.category]
+                          if (!cat) return null
+                          const Icon = cat.icon
+                          return (
+                            <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${cat.color} ${cat.bgColor} ${cat.borderColor} w-fit`}>
+                              <Icon className="w-3.5 h-3.5" />
+                              {cat.label}
+                            </div>
+                          )
+                        })()}
+                      </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-sm ${status.bgClass} ${status.borderClass} ${status.textClass}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
@@ -1452,31 +1452,31 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
 
                               <Agent2MapVisuals key={selectedIssue.id} issue={selectedIssue} allIssues={issues} agentState={state2}>
                                 {state2 === 'done' && (
-                                  <div className="bg-card/30 p-2.5 rounded-lg border border-border mt-3 text-[10.5px]">
+                                  <div className="bg-[#0969da]/10 p-4 sm:p-5 rounded-xl border border-[#0969da]/30 mt-4">
                                     {selectedIssue.cluster_id ? (
-                                      <>
-                                        <div className="flex items-center gap-2 mb-1.5">
+                                      <div className="flex flex-col gap-2.5">
+                                        <div className="flex items-center gap-1.5">
                                           <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                                          <span className="font-semibold text-amber-400">Duplicate Detected</span>
+                                          <span className="font-bold text-amber-500 text-xs uppercase tracking-wider">Duplicate Detected</span>
                                         </div>
-                                        <p className="text-muted-foreground leading-relaxed">
-                                          This issue has been clustered with an existing report in this vicinity.
+                                        <div className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
+                                          <span className="font-bold text-muted-foreground">Trace:</span> This issue has been clustered with an existing report in this vicinity.
                                           <br />
-                                          <span className="text-muted-foreground/70 font-mono text-[9px] mt-1 block">
+                                          <span className="font-mono text-[11px] mt-2 block text-muted-foreground">
                                             Cluster ID: {selectedIssue.cluster_id.slice(0, 8)}...
                                           </span>
-                                        </p>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <div className="flex items-center gap-2 mb-1.5">
-                                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                                          <span className="font-semibold text-emerald-400">Unique Report</span>
                                         </div>
-                                        <p className="text-muted-foreground">
-                                          Checked unique report. No duplicate entries detected within range.
-                                        </p>
-                                      </>
+                                      </div>
+                                    ) : (
+                                      <div className="flex flex-col gap-2.5">
+                                        <div className="flex items-center gap-1.5">
+                                          <ShieldCheck className="w-3.5 h-3.5 text-[#0969da]" />
+                                          <span className="font-bold text-[#0969da] text-xs uppercase tracking-wider">Unique Report</span>
+                                        </div>
+                                        <div className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
+                                          <span className="font-bold text-muted-foreground">Trace:</span> Checked unique report. No duplicate entries detected within range.
+                                        </div>
+                                      </div>
                                     )}
                                   </div>
                                 )}
@@ -1510,41 +1510,47 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               )}
 
                               {state3 === 'done' && (
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] mt-2">
-                                  <div>
-                                    <span className="text-muted-foreground font-semibold">Credibility Index:</span>
-                                    <span className={`ml-1 font-bold ${selectedIssue.credibility_score && selectedIssue.credibility_score >= 6 ? 'text-emerald-400' : 'text-amber-400'}`}>
-                                      {selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : 'Processing...'}
-                                    </span>
-                                  </div>
-                                  <div>
-                                    <span className="text-muted-foreground font-semibold">Automatic Validation:</span>
-                                    {selectedIssue.needs_community_verification === false ? (
-                                      <span className="text-emerald-400 ml-1 font-semibold">Approved (by AI)</span>
-                                    ) : selectedIssue.needs_community_verification === true ? (
-                                      getAgentState(selectedIssue.pipeline_stage, 'awaiting_community_review', isDuplicate) === 'done' ? (
-                                        <span className="text-emerald-400 ml-1 font-semibold">Community Review Completed</span>
-                                      ) : (
-                                        <span className="text-amber-400 ml-1 font-semibold">Community Review Required</span>
-                                      )
-                                    ) : (
-                                      <span className="text-muted-foreground ml-1">Pending</span>
+                                <div className="bg-[#0969da]/10 p-4 sm:p-5 rounded-xl border border-[#0969da]/30 mt-4">
+                                  <div className="flex flex-col gap-2.5">
+                                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Credibility Index:</span>
+                                        <span className={`font-bold text-xs uppercase tracking-wider ${selectedIssue.credibility_score && selectedIssue.credibility_score >= 6 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                                          {selectedIssue.credibility_score ? `${(selectedIssue.credibility_score * 10).toFixed(0)}%` : 'Processing...'}
+                                        </span>
+                                      </div>
+                                      <div className="hidden sm:block text-muted-foreground/30">|</div>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Validation:</span>
+                                        {selectedIssue.needs_community_verification === false ? (
+                                          <span className="font-bold text-emerald-400 text-xs uppercase tracking-wider">Approved (by AI)</span>
+                                        ) : selectedIssue.needs_community_verification === true ? (
+                                          getAgentState(selectedIssue.pipeline_stage, 'awaiting_community_review', isDuplicate) === 'done' ? (
+                                            <span className="font-bold text-emerald-400 text-xs uppercase tracking-wider">Community Review Completed</span>
+                                          ) : (
+                                            <span className="font-bold text-amber-400 text-xs uppercase tracking-wider">Community Review Required</span>
+                                          )
+                                        ) : (
+                                          <span className="font-bold text-muted-foreground text-xs uppercase tracking-wider">Pending</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                    
+                                    {selectedIssue.status === 'community_review' && voteTally && (
+                                      <div className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
+                                        <span className="font-bold text-muted-foreground">Community Tally:</span>{' '}
+                                        <span className="text-emerald-400 font-semibold">{voteTally.confirms} Confirms</span>{' '}
+                                        <span className="text-muted-foreground mx-1">/</span>{' '}
+                                        <span className="text-rose-400 font-semibold">{voteTally.denies} Denies</span>
+                                      </div>
+                                    )}
+
+                                    {selectedIssue.reasoning && (
+                                      <div className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
+                                        <span className="font-bold text-muted-foreground">Trace:</span> {selectedIssue.reasoning}
+                                      </div>
                                     )}
                                   </div>
-                                  {selectedIssue.status === 'community_review' && voteTally && (
-                                    <div className="w-full mt-2">
-                                      <span className="text-muted-foreground font-semibold">Community Tally: </span>
-                                      <span className="text-emerald-400 font-semibold">{voteTally.confirms} Confirms</span>
-                                      <span className="text-muted-foreground mx-1">/</span>
-                                      <span className="text-rose-400 font-semibold">{voteTally.denies} Denies</span>
-                                    </div>
-                                  )}
-                                  {selectedIssue.reasoning && (
-                                    <div className="w-full mt-1">
-                                      <span className="text-muted-foreground font-semibold">AI Reasoning: </span>
-                                      <span className="text-foreground">{selectedIssue.reasoning}</span>
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>
@@ -1588,8 +1594,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                       </p>
                                     </div>
                                   ) : (
-                                      <p className="text-[10px] text-muted-foreground italic">SLA generated, awaiting brief indexing.</p>
-                                    )}
+                                    <p className="text-[10px] text-muted-foreground italic">SLA generated, awaiting brief indexing.</p>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1603,7 +1609,7 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                         let state5: PipelineState = 'pending'
                         if (isDuplicate) state5 = 'skipped'
                         else if (selectedIssue.agent5_completed) state5 = 'done'
-                        
+
                         return (
                           <div className={`relative ${state5 === 'pending' || state5 === 'skipped' ? 'opacity-40' : ''}`}>
                             <div className={`absolute -left-[33px] top-0.5 border-4 border-slate-950 w-4 h-4 rounded-full flex items-center justify-center shadow-md ${state5 === 'done' ? 'bg-[#2da44e] shadow-emerald-500/30' : state5 === 'skipped' ? 'bg-slate-600 shadow-slate-500/30' : 'bg-slate-800 opacity-40'}`} />

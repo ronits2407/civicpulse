@@ -5,7 +5,7 @@ import { runPredictiveAgent } from '@/lib/agents/agent5-predictive';
 export async function POST(req: Request) {
   try {
     const supabase = await createServerSupabaseClient();
-    
+
     // Auth check - Must be admin
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     const alerts = await runPredictiveAgent(days, bbox);
 
     return NextResponse.json({ success: true, count: alerts.length, alerts });
-    
+
   } catch (error: any) {
     console.error('Predictive Agent Error:', error);
     return NextResponse.json({ error: error.message }, { status: 500 });

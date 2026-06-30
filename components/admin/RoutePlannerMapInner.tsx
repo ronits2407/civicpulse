@@ -17,10 +17,10 @@ interface Props {
 
 const CATEGORY_COLORS: Record<string, string> = {
   infrastructure: '#0969da',
-  sanitation:     '#34d399',
-  safety:         '#f87171',
-  utility:        '#fbbf24',
-  environment:    '#2dd4bf',
+  sanitation: '#34d399',
+  safety: '#f87171',
+  utility: '#fbbf24',
+  environment: '#2dd4bf',
 }
 
 function getCategoryColor(cat: string) {
@@ -108,7 +108,7 @@ function RouteLayer({ clusters, selectedClusterId, userLocation, activeRoute }: 
     clusters.forEach((cluster, clusterIndex) => {
       const isSelected = cluster.id === selectedClusterId
       const opacity = isSelected ? 1 : 0.3
-      
+
       let orderedIssues = cluster.issues
       if (isSelected && activeRoute?.optimizedWaypointIndices) {
         const mapped = activeRoute.optimizedWaypointIndices.map((i: number) => cluster.issues[i]).filter(Boolean)
@@ -124,14 +124,14 @@ function RouteLayer({ clusters, selectedClusterId, userLocation, activeRoute }: 
           icon: makePinIcon(color, number),
           opacity
         })
-        
+
         marker.bindPopup(`
           <div style="font-family:system-ui,sans-serif;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:10px;padding:8px;font-size:11px;">
              <strong>${issue.title || issue.category}</strong><br/>
              <span style="color:#8b949e">${issue.address}</span>
           </div>
         `, { className: 'civic-popup' })
-        
+
         marker.addTo(lg)
         // Auto-zoom to this issue if its cluster is selected, or if nothing is selected (zoom to see all city issues)
         if (isSelected || !selectedClusterId) {
@@ -141,21 +141,21 @@ function RouteLayer({ clusters, selectedClusterId, userLocation, activeRoute }: 
     })
 
     if (activeRoute && activeRoute.encodedPolyline) {
-       try {
-         const decoded = polyline.decode(activeRoute.encodedPolyline)
-         L.polyline(decoded, {
-           color: '#0969da',
-           weight: 5,
-           opacity: 0.8,
-           dashArray: '10 5'
-         }).addTo(lg)
-       } catch (e) {
-         console.error('Failed to decode polyline', e)
-       }
+      try {
+        const decoded = polyline.decode(activeRoute.encodedPolyline)
+        L.polyline(decoded, {
+          color: '#0969da',
+          weight: 5,
+          opacity: 0.8,
+          dashArray: '10 5'
+        }).addTo(lg)
+      } catch (e) {
+        console.error('Failed to decode polyline', e)
+      }
     }
 
     if (bounds.isValid()) {
-       map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 })
+      map.flyToBounds(bounds, { padding: [60, 60], duration: 1.2 })
     }
 
   }, [clusters, selectedClusterId, userLocation, activeRoute, map])

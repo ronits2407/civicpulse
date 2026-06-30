@@ -38,16 +38,16 @@ Output exactly a JSON array matching this format:
 
 export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
   const supabase = createServiceClient()
-  
+
   // 1. Fetch issues within lookback period
   const dateLimit = new Date();
   dateLimit.setDate(dateLimit.getDate() - lookbackDays);
-  
+
   const { data: issues, error } = await supabase
     .from('issues')
     .select('*')
     .gte('created_at', dateLimit.toISOString())
-    
+
   if (error) throw error;
   if (!issues || issues.length === 0) return [];
 
@@ -110,12 +110,12 @@ export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
     try {
       // Use Pro model for Agent 5 as per rules
       const predictions = await generateStructuredJSON<PredictiveAlertOutput[]>(prompt, SYSTEM_PROMPT, true);
-      
+
       // 5. Insert predictions into database
       for (const pred of predictions) {
         const pointWkt = `POINT(${cluster.centroid.lng} ${cluster.centroid.lat})`;
         const address = cluster.issues.find((i: any) => i.address)?.address || null;
-        
+
         const alertToInsert = {
           location: pointWkt,
           address: address,
@@ -125,11 +125,11 @@ export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
           prediction_date: new Date().toISOString(),
           is_actioned: false
         };
-        
+
         const { error: insertError } = await supabase
           .from('predictive_alerts')
           .insert(alertToInsert);
-          
+
         if (insertError) {
           console.error('[Agent 5] Error inserting predictive alert:', insertError);
         } else {

@@ -1487,7 +1487,7 @@ export function AdminDashboardClient({ user, profile, initialIssues, departments
                                         )}
                                       </div>
                                     </div>
-                                    
+
                                     {selectedIssue.status === 'community_review' && voteTally && (
                                       <div className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
                                         <span className="font-bold text-muted-foreground">Community Tally:</span>{' '}

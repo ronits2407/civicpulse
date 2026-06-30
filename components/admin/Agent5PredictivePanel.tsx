@@ -262,6 +262,12 @@ export function Agent5PredictivePanel({ isOpen, onClose, userLocation }: Props) 
               </div>
             )}
 
+            {isMobile && (
+              <div className="w-full h-[250px] relative mt-4 rounded-xl overflow-hidden border border-border">
+                {mapArea}
+              </div>
+            )}
+
             {step !== 'idle' && (
               <div className="space-y-4">
                 <div className="bg-background border border-border rounded-xl p-3 space-y-3">
@@ -289,12 +295,6 @@ export function Agent5PredictivePanel({ isOpen, onClose, userLocation }: Props) 
                     </div>
                   </div>
                 </div>
-
-                {isMobile && (
-                  <div className="w-full h-[250px] relative mt-4 rounded-xl overflow-hidden border border-border">
-                    {mapArea}
-                  </div>
-                )}
 
                 {results.length > 0 && (
                   <div className="mt-4 space-y-2">

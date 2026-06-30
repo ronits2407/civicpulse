@@ -36,7 +36,7 @@ Output exactly a JSON array matching this format:
 ]
 `;
 
-export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
+export async function fetchAndClusterIssues(lookbackDays: number, bbox?: BBox) {
   const supabase = createServiceClient()
 
   // 1. Fetch issues within lookback period
@@ -87,71 +87,86 @@ export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
   const { clusters: clusterIndices, centroids } = getOptimalClusters(dataPoints);
 
   const clusteredData = centroids.map((centroid, idx) => ({
+    id: `cluster_${idx}_${Date.now()}`,
     centroid: { lat: centroid[0], lng: centroid[1] },
     issues: filteredIssues.filter((_, i) => clusterIndices[i] === idx)
   }));
 
+  return clusteredData;
+}
+
+export async function analyzePredictiveCluster(cluster: any) {
+  if (!cluster || !cluster.issues || cluster.issues.length === 0) return [];
+  
+  const supabase = createServiceClient()
   const generatedAlerts = [];
 
-  // 4. Generate predictions per cluster
-  for (const cluster of clusteredData) {
-    if (cluster.issues.length === 0) continue;
+  // Summarize cluster data for Gemini
+  const clusterSummary = cluster.issues.map((i: any) => ({
+    category: i.category,
+    subcategory: i.subcategory,
+    severity: i.severity,
+    created_at: i.created_at,
+  }));
 
-    // Summarize cluster data for Gemini
-    const clusterSummary = cluster.issues.map((i: any) => ({
-      category: i.category,
-      subcategory: i.subcategory,
-      severity: i.severity,
-      created_at: i.created_at,
-    }));
+  const prompt = `Cluster Location: lat ${cluster.centroid.lat}, lng ${cluster.centroid.lng}\nHistorical Issues in cluster:\n${JSON.stringify(clusterSummary, null, 2)}`;
 
-    const prompt = `Cluster Location: lat ${cluster.centroid.lat}, lng ${cluster.centroid.lng}\nHistorical Issues in cluster:\n${JSON.stringify(clusterSummary, null, 2)}`;
+  try {
+    // Use Pro model for Agent 5 as per rules
+    const predictions = await generateStructuredJSON<PredictiveAlertOutput[]>(prompt, SYSTEM_PROMPT, true);
 
-    try {
-      // Use Pro model for Agent 5 as per rules
-      const predictions = await generateStructuredJSON<PredictiveAlertOutput[]>(prompt, SYSTEM_PROMPT, true);
+    // 5. Insert predictions into database
+    for (const pred of predictions) {
+      const pointWkt = `POINT(${cluster.centroid.lng} ${cluster.centroid.lat})`;
+      const address = cluster.issues.find((i: any) => i.address)?.address || null;
 
-      // 5. Insert predictions into database
-      for (const pred of predictions) {
-        const pointWkt = `POINT(${cluster.centroid.lng} ${cluster.centroid.lat})`;
-        const address = cluster.issues.find((i: any) => i.address)?.address || null;
+      const alertToInsert = {
+        location: pointWkt,
+        address: address,
+        predicted_category: pred.predicted_category,
+        confidence: pred.confidence,
+        basis_summary: pred.basis_summary,
+        prediction_date: new Date().toISOString(),
+        is_actioned: false
+      };
 
-        const alertToInsert = {
-          location: pointWkt,
-          address: address,
-          predicted_category: pred.predicted_category,
-          confidence: pred.confidence,
-          basis_summary: pred.basis_summary,
-          prediction_date: new Date().toISOString(),
-          is_actioned: false
-        };
+      const { error: insertError } = await supabase
+        .from('predictive_alerts')
+        .insert(alertToInsert);
 
-        const { error: insertError } = await supabase
-          .from('predictive_alerts')
-          .insert(alertToInsert);
-
-        if (insertError) {
-          console.error('[Agent 5] Error inserting predictive alert:', insertError);
-        } else {
-          generatedAlerts.push(alertToInsert);
-        }
+      if (insertError) {
+        console.error('[Agent 5] Error inserting predictive alert:', insertError);
+      } else {
+        generatedAlerts.push(alertToInsert);
       }
-    } catch (err) {
-      console.error('[Agent 5] Failed to generate predictions for a cluster:', err);
     }
-  }
-
-  // 6. Mark issues as Agent 5 completed
-  const allIssueIds = filteredIssues.map((i: any) => i.id);
-  if (allIssueIds.length > 0) {
-    const { error: updateError } = await supabase
-      .from('issues')
-      .update({ agent5_completed: true })
-      .in('id', allIssueIds);
-    if (updateError) {
-      console.error('[Agent 5] Error marking issues completed:', updateError);
+    
+    // Mark issues as Agent 5 completed
+    const issueIds = cluster.issues.map((i: any) => i.id);
+    if (issueIds.length > 0) {
+      const { error: updateError } = await supabase
+        .from('issues')
+        .update({ agent5_completed: true })
+        .in('id', issueIds);
+      if (updateError) {
+        console.error('[Agent 5] Error marking issues completed:', updateError);
+      }
     }
+  } catch (err) {
+    console.error('[Agent 5] Failed to generate predictions for a cluster:', err);
   }
 
   return generatedAlerts;
+}
+
+export async function runPredictiveAgent(lookbackDays: number, bbox?: BBox) {
+  const clusteredData = await fetchAndClusterIssues(lookbackDays, bbox);
+  const allAlerts = [];
+  
+  for (const cluster of clusteredData) {
+    const alerts = await analyzePredictiveCluster(cluster);
+    allAlerts.push(...alerts);
+  }
+  
+  return allAlerts;
 }

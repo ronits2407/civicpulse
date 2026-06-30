@@ -1,115 +1,88 @@
-# 🏙️ CivicPulse — Next-Generation AI Civic Issue Intelligence Platform
+# 🏙️ CivicPulse — AI-Powered Civic Issue Reporting Platform
 
-CivicPulse is an intelligent, agentic civic issue reporting platform designed to eliminate bureaucratic bottlenecks, citizen apathy, and duplicate reporting in urban governance (specifically tailored for Indian cities like Nashik). 
+**Hackathon Submission — Problem Statement 2: Community Hero (Hyperlocal Problem Solver)**
 
-It empowers citizens to report civic problems through an accessible interface, while an autonomous **5-Agent LangGraph AI Pipeline** handles classification, spatial deduplication, credibility validation, resolution briefing, and predictive hotspot analysis.
+CivicPulse is a full-stack, AI-powered civic issue reporting platform designed for Indian cities. Citizens report infrastructure, sanitation, safety, utility, and environmental problems via text, photo, video, or voice. A **six-agent LangGraph pipeline** powered by Google Gemini 2.5 Flash and Pro automatically classifies, deduplicates, validates, generates resolution briefs, and predicts future civic hotspots.
 
----
-
-## 🌟 The Vision & Problem Statement
-Urban civic problems—potholes, sanitation issues, broken streetlights—often go unresolved due to lack of actionable data and duplicate reporting. CivicPulse acts as a **smart AI intermediary**. It accepts raw citizen reports (text, images, or **voice**), leverages computer vision and semantic search to understand the problem, ensures the issue isn't already reported using vector similarity and GIS spatial data, and finally hands over a highly structured, actionable brief to the relevant civic department.
+The platform is deployed live on Google Cloud Run with a complete CI/CD pipeline. It supports any typed language via automatic translation, community verification with quorum-based voting, karma gamification, TSP-optimised field team routing, and a fully featured admin dashboard.
 
 ---
 
-## 🔥 Key Innovations (Why This Wins)
+## 🌟 Project Highlights
 
-We've implemented a robust set of features to maximize accessibility, agentic depth, and production-readiness.
-
-### 🎙️ Voice Reporting (Web Speech API)
-**The Feature:** True accessibility for all demographics. Citizens can simply click the microphone icon and dictate their issue (e.g., "There's a massive pothole near the central temple...").
-**The Tech:** Leverages browser-native Web Speech API to transcribe voice directly into the report description, seamlessly tying into our multi-modal submission flow.
-
-### 🌐 Multilingual Civic Reporting
-**The Feature:** Built for India's linguistic diversity. Reports submitted in regional languages are autonomously handled, ensuring non-English speakers aren't alienated from civic participation.
-
-### 🧠 Multi-Model AI Ecosystem
-**The Feature:** A unified AI wrapper (`lib/ai/client.ts`) that orchestrates between **Google Gemini 2.5 Flash / Pro** (for lightning-fast classification and deep reasoning) and **Ollama** (for local/cloud flexible fallback). We use `text-embedding-004` for creating 768-dimensional vectors.
-
-### 🔮 Predictive Hotspot Intelligence (Agent 5)
-**The Feature:** Moving from reactive fixing to **proactive urban planning**. 
-**The UI Flow:** Inside the Admin Dashboard Map Interface, officials click the **"Analyse Issues"** button. This triggers **Agent 5 (Predictive Analysis)** using Gemini Pro. The agent analyzes historical spatiotemporal data and generates predictive alerts (e.g., "78% chance of waterlogging in Ward 4 next monsoon based on current drainage reports"). 
-
-### 🗺️ Real-Time Map Dashboard & Aesthetic UI
-**The Feature:** A breathtaking, glassmorphic UI equipped with Mapbox GL JS map rendering. 
-**The UI Flow:** Citizens and Admins see real-time map pins drop as issues are reported. We've optimized map pins to be sleek and aesthetically pleasing, significantly improving the administrative map interface's utility and visual hierarchy.
+* **6 AI agents** orchestrated by LangGraph with conditional branching and retry/resume.
+* **3-layer deduplication:** pgvector cosine similarity + PostGIS spatial search + Gemini semantic verification.
+* **Any typed language supported** via automatic detection and translation (Agent 0).
+* **TSP-optimised routing** for municipal field teams via Google Maps Routes API.
+* **Community verification** with quorum-based voting and karma gamification.
+* **Predictive hotspot analysis** using geographic DBSCAN clustering + Gemini 2.5 Pro.
+* **Deployed live** on Google Cloud Run with zero-credential CI/CD (Workload Identity Federation).
 
 ---
 
-## 🤖 The 5-Agent LangGraph Pipeline
+## 🤖 The 6-Agent LangGraph Pipeline
 
-When a report hits `/api/reports/process`, it enters our **LangGraph StateGraph**, moving autonomously through highly specialized AI agents:
+When a report is submitted, it enters our LangGraph `StateGraph`, moving autonomously through specialized AI agents:
 
-1. **Agent 1: Classifier** (Gemini 2.5 Flash Vision)
+1. **Agent 0: Translation** 
+   - Detects the language of the report and translates it to English to standardize downstream processing. 
+   - Preserves the original language and translation trace.
+2. **Agent 1: Classifier** (Gemini 2.5 Flash Vision)
    - Evaluates text + image evidence.
-   - Routes the issue to the correct civic department and calculates severity (1-10).
-2. **Agent 2: Deduplication** (pgvector + PostGIS)
-   - Creates a vector embedding of the report.
-   - Runs a `match_issues` Supabase RPC for semantic cosine similarity (≥ 0.85).
-   - Runs a spatial fallback via PostGIS (`issues_within_radius`) to group identical issues within a 200m radius into `issue_clusters`.
-3. **Agent 3: Validation** (Credibility Check)
-   - Cross-references claims with real-world context (e.g., checks Open-Meteo API for weather conditions). 
-   - Assigns a credibility score. (Prevents fake reporting).
-4. **Agent 4: Resolution** (Civic Action Briefs)
-   - Calculates dynamic SLA deadlines based on the urgency matrix.
-   - Generates a professional 150-200 word Civic Action Brief for the exact workers handling the issue.
-5. **Agent 5: Predictive (Admin Triggered)**
-   - Gemini Pro synthesizes macro-trends across the dataset and writes to `predictive_alerts` for long-term city planning.
+   - Extracts Category, Subcategory, Severity (1-10), and identifies if it's an emergency.
+3. **Agent 2: Deduplication** (pgvector + PostGIS + Gemini)
+   - **Layer 1:** pgvector cosine similarity (≥ 0.85).
+   - **Layer 2:** PostGIS spatial search (`ST_DWithin` 200m).
+   - **Layer 3:** AI semantic verification as the final judge to distinguish distinct but similar reports.
+4. **Agent 3: Validation** (Credibility Check)
+   - Fetches live weather data from Open-Meteo if relevant.
+   - Uses Web Search APIs to validate claims against local events.
+   - Calculates a credibility score (1-10). If < 6, the issue is routed to community review.
+5. **Agent 4: Resolution** (Civic Action Briefs)
+   - Calculates dynamic SLA deadlines based on a severity matrix.
+   - Generates a professional 150-200 word Civic Action Brief (and a local language version).
+6. **Agent 5: Predictive (Async/Admin Triggered)** (Gemini 2.5 Pro)
+   - Synthesizes macro-trends across the dataset using geographic DBSCAN clustering.
+   - Generates predictive alerts for proactive urban planning.
 
 ---
 
-## 🛠️ Production-Optimized Tech Stack
+## 🛠️ Technology Stack
 
-* **Framework:** Next.js 16.2.9 (App Router, Turbopack)
-* **Language:** TypeScript (Strict Mode)
-* **Package Manager:** `bun`
-* **Styling:** Tailwind CSS + shadcn/ui (Radix UI, Mira theme, Slate base)
-* **Database & Auth:** Supabase (PostgreSQL, Auth, Storage)
-* **Spatial & Semantic DB:** PostGIS, pgvector
-* **AI Orchestration:** `@langchain/langgraph` + `@langchain/core`
-* **Maps:** Mapbox GL JS + Google Maps Geocoding API
-* **Deployment target:** Google Cloud Run (asia-south1) using Docker.
-
-**Codebase Health:** The repository is fully optimized for production. All redundant components, unreachable code, and scratch scripts have been aggressively pruned to ensure maximum execution efficiency and clean architecture. Test suites are modularized in the `./tests` directory.
+* **Framework:** Next.js 16.2.9 (App Router, TypeScript, Turbopack)
+* **UI/Styling:** Tailwind CSS + shadcn/ui + Framer Motion
+* **Database:** Supabase (PostgreSQL 17) with PostGIS & pgvector
+* **AI Orchestration:** LangGraph (`@langchain/langgraph`)
+* **AI Models:** Google Gemini 2.5 Flash / Pro (via unified multi-model client)
+* **Maps & Routing:** Mapbox GL JS + Google Maps Geocoding & Routes APIs
+* **Deployment:** Google Cloud Run (asia-south1) via multi-stage Docker container
+* **CI/CD:** GitHub Actions with Workload Identity Federation
 
 ---
 
 ## 🗄️ Database Architecture
 
-* **`profiles`**: Extends auth.users. Tracks roles, karma_score.
+* **`profiles`**: Extends auth.users. Tracks roles, karma scores, home locations.
 * **`issues`**: Core table utilizing `geography(Point, 4326)` for spatial tracking and `vector(768)` for semantic deduplication.
-* **`issue_clusters`**: Groups identical reports to prevent civic worker fatigue.
-* **`predictive_alerts`**: Stores Agent 5 insights.
-* **`karma_events`**: Immutable ledger of citizen points.
+* **`issue_clusters`**: Groups identical reports (deduplication) to prevent civic worker fatigue.
+* **`verifications`**: Stores community voting verdicts on unverified issues.
+* **`karma_events`**: Ledger of citizen engagement points.
+* **`predictive_alerts`**: Stores Agent 5 geographic insights.
 
 ---
 
 ## 🚀 Getting Started
 
-### 1. Prerequisites
+### Prerequisites
 * [Bun](https://bun.sh/) installed.
 * Supabase project with PostGIS and pgvector enabled.
 * API Keys: Gemini, Google Maps, Mapbox.
 
-### 2. Environment Variables
-Create a `.env.local` file:
-```env
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-GEMINI_API_KEY=...
-GOOGLE_MAPS_API_KEY=...
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
-NEXT_PUBLIC_MAPBOX_TOKEN=...
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-### 3. Quickstart
+### Quickstart
 ```bash
-# Install dependencies instantly with Bun
+# Install dependencies
 bun install
 
-# Run the Next.js Turbopack dev server
+# Run the dev server
 bun dev
 ```
-
-Visit `http://localhost:3000` to experience the future of civic governance!

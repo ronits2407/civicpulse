@@ -18,6 +18,8 @@
 
 import { GoogleGenAI } from '@google/genai'
 import OpenAI from 'openai'
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
+import { ChatOpenAI } from '@langchain/openai'
 
 // ─── Provider detection ──────────────────────────────────────────────────────
 
@@ -314,4 +316,32 @@ export async function generateText(
   })
 
   return response.text || ''
+}
+
+/**
+ * Get a LangChain Chat Model for use with ReAct agents or tool calling.
+ * Respects the AI_PROVIDER (gemini vs ollama).
+ */
+export function getChatModel(usePro = false) {
+  const provider = getProvider()
+  if (provider === 'ollama') {
+    const model = usePro ? getOllamaProModel() : getOllamaFlashModel()
+    return new ChatOpenAI({
+      modelName: model,
+      temperature: 0.1,
+      apiKey: process.env.OLLAMA_API_KEY || 'ollama',
+      configuration: {
+        baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+      },
+    })
+  }
+
+  const model = usePro ? 'gemini-2.5-pro' : 'gemini-2.5-flash'
+  if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY is not set')
+  
+  return new ChatGoogleGenerativeAI({
+    model: model,
+    temperature: 0.1,
+    apiKey: process.env.GEMINI_API_KEY,
+  })
 }

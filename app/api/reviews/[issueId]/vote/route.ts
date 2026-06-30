@@ -99,13 +99,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ iss
           })
         }
 
-        // Trigger Agent 4 manually by calling the pipeline process endpoint (background)
+        // Trigger Agent 4 manually by calling the pipeline resume endpoint (background)
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-        fetch(`${appUrl}/api/reports/retry`, {
+        fetch(`${appUrl}/api/reports/resume`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ issueId })
-        }).catch(err => console.error('Failed to trigger Agent 4:', err))
+        }).catch(err => console.error('Failed to resume pipeline:', err))
 
       } else if (finalOutcome === 'rejected') {
         // Update issue: dismiss

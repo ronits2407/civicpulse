@@ -90,7 +90,8 @@ export async function POST(request: Request) {
       try {
         console.log(`[Pipeline Retry] Resuming pipeline for issue ${issueId} from node ${startNode}...`)
         const pipeline = await createIssuePipeline(startNode)
-        await pipeline.invoke(state as any)
+        const config = { configurable: { thread_id: issueId } }
+        await pipeline.invoke(state as any, config)
         console.log(`[Pipeline Retry] Pipeline finished for issue ${issueId}`)
       } catch (err) {
         console.error(`[Pipeline Retry] Background pipeline error for issue ${issueId}:`, err)

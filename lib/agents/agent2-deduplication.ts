@@ -1,4 +1,4 @@
-import { generateEmbedding, generateStructuredJSON } from '@/lib/ai/client'
+import { generateEmbedding, generateStructuredJSON, generateText } from '@/lib/ai/client'
 import { AgentState, DeduplicationResult } from '@/lib/db/types'
 import { createServiceClient } from '@/lib/db/server'
 
@@ -11,15 +11,9 @@ export async function runDeduplicationAgent(state: AgentState): Promise<AgentSta
   try {
     const supabase = createServiceClient()
 
-    console.log('[Agent 2: Deduplicator] Generating embedding for raw text...');
-    const embedding = await generateEmbedding(state.rawText)
-
-    console.log('[Agent 2: Deduplicator] Searching for vector matches...');
-    const { data: vectorMatches, error: vectorError } = await supabase.rpc('match_issues', {
-      query_embedding: embedding,
-      match_threshold: SIMILARITY_THRESHOLD,
-      match_count: 5,
-    })
+    // NOTE: We deliberately removed global vector searching ('match_issues').
+    // Deduplication should ONLY occur within a physical 200m radius of the reported issue.
+    // If two issues are identical but 5km apart, they are NOT the same issue.
 
     let confirmedDuplicate = null;
     let similarityScore = 0;
@@ -45,22 +39,8 @@ Return a JSON object: { "is_same_issue": boolean, "reasoning": "brief explanatio
       }
     }
 
-    if (vectorError) {
-      console.error('[Agent 2: Deduplicator] Error fetching vector matches:', vectorError);
-    } else {
-      const validVectorMatches = vectorMatches?.filter((m: any) => m.id !== state.reportId) || []
-      for (const match of validVectorMatches) {
-        const isSame = await verifyDuplicateWithAI(match.id);
-        if (isSame) {
-          confirmedDuplicate = match;
-          similarityScore = match.similarity || 0.85;
-          break;
-        }
-      }
-    }
-
     if (!confirmedDuplicate) {
-      console.log('[Agent 2: Deduplicator] No verified vector match found. Searching for proximity matches...');
+      console.log('[Agent 2: Deduplicator] Searching for proximity matches within 200m...');
       const { data: proximityMatches, error: proximityError } = await supabase.rpc('issues_within_radius', {
         lat: state.coordinates.lat,
         lng: state.coordinates.lng,
@@ -105,6 +85,32 @@ Return a JSON object: { "is_same_issue": boolean, "reasoning": "brief explanatio
 
         // Also update the original matched issue to belong to this new cluster
         await supabase.from('issues').update({ cluster_id: targetClusterId }).eq('id', confirmedDuplicate.id);
+      }
+
+      // Active Cluster Manager: synthesize evolving situation
+      try {
+        console.log(`[Agent 2: Active Cluster Manager] Synthesizing evolving situation update...`);
+        const { data: parentIssue } = await supabase.from('issues').select('title, description').eq('id', confirmedDuplicate.id).single();
+        if (parentIssue) {
+          const synthesisPrompt = `
+Parent Issue:
+Title: ${parentIssue.title || 'Unknown'}
+Description: ${parentIssue.description}
+
+New Duplicate Report:
+Description: ${state.rawText}
+
+Synthesize a brief "Evolving Situation Update" (1-2 sentences) that combines insights from the new report into the parent issue.
+Only output the update text, no quotes or preamble.`;
+          const updateText = await generateText(synthesisPrompt, "You are an active cluster manager for civic issues.");
+          console.log(`[Agent 2: Active Cluster Manager] Synthesis: ${updateText}`);
+          
+          // Append to parent issue description
+          const newDescription = `${parentIssue.description}\n\n[Update]: ${updateText}`;
+          await supabase.from('issues').update({ description: newDescription }).eq('id', confirmedDuplicate.id);
+        }
+      } catch (synthError) {
+        console.error(`[Agent 2: Active Cluster Manager] Failed to synthesize update:`, synthError);
       }
 
       console.log(`[Agent 2: Deduplicator] Updating current issue ${state.reportId} as duplicate (completed)...`);

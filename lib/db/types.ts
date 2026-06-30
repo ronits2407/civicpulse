@@ -1,4 +1,4 @@
-export type IssueCategory = 'infrastructure' | 'sanitation' | 'safety' | 'utility' | 'environment'
+export type IssueCategory = 'infrastructure' | 'sanitation' | 'safety' | 'utilities' | 'environment' | 'miscellaneous'
 export type IssueStatus = 'open' | 'in_progress' | 'resolved' | 'false_closure' | 'closed' | 'community_review'
 export type UserRole = 'citizen' | 'admin'
 
@@ -44,6 +44,8 @@ export interface Issue {
   sla_deadline: string | null
   resolved_at: string | null
   agent5_completed?: boolean
+  weather_checked?: boolean | null
+  web_search_checked?: boolean | null
   created_at: string
 }
 

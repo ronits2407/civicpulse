@@ -12,10 +12,18 @@ Analyze this civic issue report and classify it.
 Report text: "${text}"
 ${imageAnalysis ? `Visual analysis: "${imageAnalysis}"` : ''}
 
+Allowed subcategories by category:
+- infrastructure: "pothole", "streetlight", "road_damage", "bridge", "sidewalk"
+- sanitation: "garbage", "drainage", "dead_animal", "public_toilet"
+- safety: "fallen_tree", "traffic_hazard", "stray_animals"
+- utilities: "water_leakage", "power_outage", "sewage"
+- environment: "pollution", "noise", "illegal_dumping"
+- miscellaneous: "other", "general_inquiry"
+
 Return a JSON object with exactly these fields:
 {
-  "category": one of ["infrastructure", "sanitation", "safety", "utility", "environment"],
-  "subcategory": specific type like "pothole", "streetlight", "garbage", "water_leakage" etc,
+  "category": one of ["infrastructure", "sanitation", "safety", "utilities", "environment", "miscellaneous"],
+  "subcategory": "MUST be exactly one of the allowed subcategories from the list above matching the chosen category",
   "severity": integer 1-10 where 10 is life-threatening emergency,
   "is_emergency": boolean, true only if severity >= 8 or immediate danger,
   "suggested_title": short clear title under 10 words,

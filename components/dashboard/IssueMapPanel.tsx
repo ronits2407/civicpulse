@@ -99,8 +99,9 @@ export function IssueMapPanel({ isOpen, onClose, userLocation }: Props) {
                 { label: 'Infra', color: '#0969da' },
                 { label: 'Sanitation', color: '#34d399' },
                 { label: 'Safety', color: '#f87171' },
-                { label: 'Utility', color: '#fbbf24' },
+                { label: 'Utilities', color: '#fbbf24' },
                 { label: 'Env', color: '#2dd4bf' },
+                { label: 'Misc', color: '#94a3b8' },
               ].map(({ label, color }) => (
                 <span key={label} className="flex items-center gap-1">
                   <span

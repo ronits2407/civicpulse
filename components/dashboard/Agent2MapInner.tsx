@@ -54,17 +54,22 @@ function getCategoryColor(cat: string) {
   return CATEGORY_COLORS[cat] ?? DEFAULT_COLOR
 }
 
-function makePinIcon(category: string, isCenter: boolean = false): L.DivIcon {
+function makePinIcon(category: string, isCenter: boolean = false, delayMs: number = 0): L.DivIcon {
   const { pin } = getCategoryColor(category)
   const size = isCenter ? 24 : 16
   const border = isCenter ? `2px solid #fff` : `1px solid #0d1117`
   
+  // Center pin is always visible. Other pins fade in.
+  const animation = isCenter 
+    ? '' 
+    : `animation: drop-in-pin 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; animation-delay: ${delayMs}ms;`
+
   return L.divIcon({
     className: '',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
     html: `
-      <div style="position:relative;width:${size}px;height:${size}px;">
+      <div style="position:relative;width:${size}px;height:${size}px; ${animation}">
         <div style="
           width:${size}px;height:${size}px;
           background:${pin};
@@ -92,12 +97,16 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
     }
     const lg = layerGroupRef.current
 
-    // Add CSS for radar
+    // Add CSS for radar and pins
     const style = document.createElement('style')
     style.innerHTML = `
       @keyframes radar-pulse {
-        0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.8; }
-        100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        0% { transform: scale(0.1); opacity: 0.8; }
+        100% { transform: scale(1); opacity: 0; }
+      }
+      @keyframes drop-in-pin {
+        0% { transform: translateY(-30px) scale(0.5); opacity: 0; }
+        100% { transform: translateY(0) scale(1); opacity: 1; }
       }
       .radar-marker {
         pointer-events: none;
@@ -122,31 +131,26 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
     }).addTo(lg)
 
     // 2. Draw the outward pulses using a custom overlay
-    // At zoom 16 near equator, 1 meter is roughly 1.3 pixels. So 200m radius = ~260px radius.
     const radiusPx = 280; 
     const radarIcon = L.divIcon({
       className: 'radar-marker',
-      iconSize: [0, 0],
-      iconAnchor: [0, 0],
+      iconSize: [radiusPx * 2, radiusPx * 2],
+      iconAnchor: [radiusPx, radiusPx],
       html: `
-        <div style="position: absolute; left: 0; top: 0;">
+        <div style="position: relative; width: 100%; height: 100%;">
           <!-- Outward pulses -->
           <div style="
-            position: absolute;
-            width: ${radiusPx * 2}px;
-            height: ${radiusPx * 2}px;
+            position: absolute; inset: 0;
             border-radius: 50%;
             border: 2px solid ${colors.pin};
-            animation: radar-pulse 15s ease-out infinite;
+            animation: radar-pulse 3s ease-out infinite;
           "></div>
           <div style="
-            position: absolute;
-            width: ${radiusPx * 2}px;
-            height: ${radiusPx * 2}px;
+            position: absolute; inset: 0;
             border-radius: 50%;
             border: 2px solid ${colors.pin};
-            animation: radar-pulse 15s ease-out infinite;
-            animation-delay: 7.5s;
+            animation: radar-pulse 3s ease-out infinite;
+            animation-delay: 1.5s;
           "></div>
         </div>
       `
@@ -164,6 +168,7 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
              Math.abs(loc.lng - centerLoc.lng) < MAX_DIST_DEG
     })
 
+    let delayCount = 0;
     for (const issue of nearby) {
       const loc = parseLocation(issue.location)
       if (!loc) continue
@@ -183,9 +188,14 @@ function RadarLayer({ centerIssue, allIssues }: { centerIssue: Issue; allIssues:
       }
 
       const isInside = dist <= 200
+      
+      // Delay stagger based on distance roughly, or just sequence
+      delayCount++
+      const baseDelay = 1500 // Start fading in pins after camera starts flying
+      const staggeredDelay = baseDelay + (delayCount * 150)
 
       const marker = L.marker([renderLat, renderLng], {
-        icon: makePinIcon(issue.category, false),
+        icon: makePinIcon(issue.category, false, staggeredDelay),
       })
       marker.addTo(lg)
 
@@ -221,8 +231,6 @@ export default function Agent2MapInner({ issue, allIssues }: Props) {
   // Wait until we have a valid location before trying to render the map
   if (!centerLoc) return null
 
-  const center: [number, number] = [centerLoc.lat, centerLoc.lng]
-
   return (
     <>
       <style>{`
@@ -231,8 +239,8 @@ export default function Agent2MapInner({ issue, allIssues }: Props) {
         .leaflet-control-attribution { display: none !important; }
       `}</style>
       <MapContainer
-        center={center}
-        zoom={16}
+        center={[centerLoc.lat, centerLoc.lng]}
+        zoom={16.5}
         zoomControl={true}
         scrollWheelZoom={true}
         doubleClickZoom={true}

@@ -32,8 +32,9 @@ const CATEGORY_COLORS: Record<string, { pin: string; circle: string; fill: strin
   infrastructure: { pin: '#0969da', circle: '#0969da', fill: '#0969da22' },
   sanitation: { pin: '#34d399', circle: '#34d399', fill: '#34d39922' },
   safety: { pin: '#f87171', circle: '#f87171', fill: '#f8717122' },
-  utility: { pin: '#fbbf24', circle: '#fbbf24', fill: '#fbbf2422' },
+  utilities: { pin: '#fbbf24', circle: '#fbbf24', fill: '#fbbf2422' },
   environment: { pin: '#2dd4bf', circle: '#2dd4bf', fill: '#2dd4bf22' },
+  miscellaneous: { pin: '#94a3b8', circle: '#94a3b8', fill: '#94a3b822' },
 }
 const DEFAULT_COLOR = { pin: '#94a3b8', circle: '#94a3b8', fill: '#94a3b822' }
 

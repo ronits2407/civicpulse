@@ -1,4 +1,4 @@
-import { StateGraph, END } from '@langchain/langgraph'
+import { StateGraph, END, MemorySaver } from '@langchain/langgraph'
 import { AgentState } from '@/lib/db/types'
 import { runClassifierAgent } from './agent1-classifier'
 import { runTranslationAgent } from './agent0-translation'
@@ -6,6 +6,10 @@ import { runDeduplicationAgent } from './agent2-deduplication'
 import { runValidationAgent } from './agent3-validation'
 import { runResolutionAgent } from './agent4-resolution'
 import { createServiceClient } from '@/lib/db/server'
+
+// Hackathon note: Using MemorySaver for demo purposes. 
+// For production, use PostgresSaver with a direct database connection.
+export const checkpointer = new MemorySaver()
 
 function shouldContinueAfterDedup(state: AgentState): string {
   if (state.error) return 'end'
@@ -15,7 +19,8 @@ function shouldContinueAfterDedup(state: AgentState): string {
 
 function shouldContinueAfterValidation(state: AgentState): string {
   if (state.error) return 'end'
-  if (state.validation?.needs_community_verification) return 'end'
+  // If it needs community verification, we route to the interrupt node
+  if (state.validation?.needs_community_verification) return 'community_review_wait'
   return 'resolve'
 }
 
@@ -56,6 +61,8 @@ export async function createIssuePipeline(startNode: 'translate' | 'classify' | 
   workflow.addNode('classify', runClassifierAgent)
   workflow.addNode('deduplicate', runDeduplicationAgent)
   workflow.addNode('validate', runValidationAgent)
+  // Dummy node just to anchor the interrupt
+  workflow.addNode('community_review_wait', (state) => state) 
   workflow.addNode('resolve', runResolutionAgent)
   workflow.addNode('save', saveToDatabase)
 
@@ -79,14 +86,21 @@ export async function createIssuePipeline(startNode: 'translate' | 'classify' | 
     validate: 'validate',
     end: 'save',
   } as any)
+  
   workflow.addConditionalEdges('validate' as any, shouldContinueAfterValidation as any, {
     resolve: 'resolve',
+    community_review_wait: 'community_review_wait',
     end: 'save',
   } as any)
+
+  workflow.addEdge('community_review_wait' as any, 'resolve' as any)
   workflow.addEdge('resolve' as any, 'save' as any)
   workflow.addEdge('save' as any, END as any)
 
-  return workflow.compile()
+  return workflow.compile({ 
+    checkpointer,
+    interruptBefore: ['community_review_wait'] as any
+  })
 }
 
 async function saveToDatabase(state: AgentState): Promise<AgentState> {

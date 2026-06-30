@@ -49,6 +49,7 @@ import {
   Globe,
   AlertTriangle,
   Share2,
+  MinusCircle,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'sonner'
@@ -80,7 +81,7 @@ const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string
     bgColor: 'bg-red-950/40',
     borderColor: 'border-red-900/30'
   },
-  utility: {
+  utilities: {
     icon: Zap,
     label: 'Utilities',
     color: 'text-amber-400',
@@ -93,6 +94,13 @@ const CATEGORY_DETAILS: Record<string, { icon: any; label: string; color: string
     color: 'text-teal-400',
     bgColor: 'bg-teal-950/40',
     borderColor: 'border-teal-900/30'
+  },
+  miscellaneous: {
+    icon: Info,
+    label: 'Miscellaneous',
+    color: 'text-slate-400',
+    bgColor: 'bg-slate-950/40',
+    borderColor: 'border-slate-900/30'
   }
 }
 
@@ -207,7 +215,7 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
 
   useEffect(() => {
     if (isRunning) {
-      const categories = ['Infrastructure', 'Sanitation', 'Safety', 'Environment', 'Utility']
+      const categories = ['Infrastructure', 'Sanitation', 'Safety', 'Environment', 'Utilities', 'Miscellaneous']
       const interval = setInterval(() => {
         setSpinCategory(categories[Math.floor(Math.random() * categories.length)])
         setSpinSeverity(Math.floor(Math.random() * 10) + 1)
@@ -288,11 +296,132 @@ function Agent1Visuals({ issue, isRunning }: { issue: Issue, isRunning: boolean 
         </div>
 
         {imageAnalysisText && !isRunning && (
-          <div className="mt-1 border-t border-border/50 pt-2 text-muted-foreground text-[11px] italic leading-relaxed">
-            <span className="font-semibold text-[#0969da] not-italic block mb-1">Visual Analysis</span>
-            {imageAnalysisText}
+          <div className="mt-4 bg-[#0969da]/10 border border-[#0969da]/30 rounded-xl p-4 sm:p-5">
+            <span className="text-[11px] font-bold text-[#0969da] uppercase tracking-widest flex items-center gap-1.5 mb-2.5">
+              <Sparkles className="w-4 h-4" /> Visual Analysis
+            </span>
+            <p className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
+              {imageAnalysisText}
+            </p>
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function Agent3Visuals({ isRunning, issue }: { isRunning: boolean, issue: any }) {
+  // Use exact database tracking if available. If still running or missing DB fields, assume true (running state).
+  // When done, if the field is explicitly false, we mark it as skipped.
+  const skipWeather = !isRunning && issue?.weather_checked === false;
+  const skipWebSearch = !isRunning && issue?.web_search_checked === false;
+
+  return (
+    <div className="mt-4 bg-black/40 border border-border rounded-xl p-4 sm:p-6 overflow-hidden relative">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-2 relative z-20">
+        
+        {/* Step 1: Weather */}
+        <div className={`flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 w-24 ${skipWeather ? 'opacity-50' : 'opacity-100'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isRunning ? 'bg-[#0969da]/20 text-[#0969da] animate-pulse ring-2 ring-[#0969da]/50' : skipWeather ? 'bg-muted/50 text-muted-foreground ring-1 ring-border' : 'bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/50'}`}>
+            {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : skipWeather ? <MinusCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className={`text-[11px] font-mono block ${isRunning ? 'text-[#0969da]' : skipWeather ? 'text-muted-foreground' : 'text-emerald-500'}`}>
+              {skipWeather ? 'Weather Call Skipped' : 'Check Open-Meteo'}
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Line 1 */}
+        <div className="hidden sm:block h-[2px] flex-1 bg-border/50 relative rounded-full overflow-hidden">
+          <div className={`absolute left-0 top-0 bottom-0 transition-all duration-1000 ${isRunning ? 'w-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-[#0969da] to-transparent' : 'w-full bg-emerald-500'}`} />
+        </div>
+
+        {/* Step 2: Web Search */}
+        <div className={`flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 w-24 ${skipWebSearch ? 'opacity-50' : 'opacity-100'}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isRunning ? 'bg-amber-500/20 text-amber-500 animate-pulse ring-2 ring-amber-500/50' : skipWebSearch ? 'bg-muted/50 text-muted-foreground ring-1 ring-border' : 'bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/50'}`}>
+            {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : skipWebSearch ? <MinusCircle className="w-4 h-4" /> : <CheckCircle2 className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className={`text-[11px] font-mono block ${isRunning ? 'text-amber-500' : skipWebSearch ? 'text-muted-foreground' : 'text-emerald-500'}`}>
+              {skipWebSearch ? 'Web Search Skipped' : 'Web Search'}
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Line 2 */}
+        <div className="hidden sm:block h-[2px] flex-1 bg-border/50 relative rounded-full overflow-hidden">
+          <div className={`absolute left-0 top-0 bottom-0 transition-all duration-1000 ${isRunning ? 'w-full animate-[shimmer_1.5s_infinite_0.2s] bg-gradient-to-r from-transparent via-amber-500 to-transparent' : 'w-full bg-emerald-500'}`} />
+        </div>
+
+        {/* Step 3: Synthesis */}
+        <div className="flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 opacity-100 w-24">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${isRunning ? 'bg-purple-500/20 text-purple-500 animate-pulse ring-2 ring-purple-500/50' : 'bg-emerald-500/20 text-emerald-500 ring-1 ring-emerald-500/50'}`}>
+            {isRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className={`text-[11px] font-mono block ${isRunning ? 'text-purple-500' : 'text-emerald-500'}`}>
+              Synthesize Score
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  )
+}
+
+function Agent4Visuals({ isRunning }: { isRunning: boolean }) {
+  return (
+    <div className="mt-4 bg-black/40 border border-border rounded-xl p-4 sm:p-6 overflow-hidden relative">
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-2 relative z-20">
+        
+        {/* Step 1: SOP Search */}
+        <div className="flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 opacity-100 w-24">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${isRunning ? 'bg-teal-500/20 text-teal-400 border-teal-500/50 shadow-[0_0_10px_rgba(45,212,191,0.3)] animate-pulse' : 'bg-emerald-500/20 text-emerald-500 border-emerald-500/50'}`}>
+            {isRunning ? <Database className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className={`text-[11px] font-mono block ${isRunning ? 'text-teal-400' : 'text-emerald-500'}`}>
+              Knowledge Base
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Line 1 */}
+        <div className="hidden sm:block h-[2px] flex-1 bg-border/50 relative rounded-full overflow-hidden">
+          <div className={`absolute left-0 top-0 bottom-0 transition-all duration-1000 ${isRunning ? 'w-full animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-teal-500 to-transparent' : 'w-full bg-emerald-500'}`} />
+        </div>
+
+        {/* Step 2: Brief Drafting */}
+        <div className="flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 opacity-100 w-24">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${isRunning ? 'bg-[#0969da]/20 text-[#0969da] border-[#0969da]/50 shadow-[0_0_10px_rgba(9,105,218,0.3)] animate-pulse' : 'bg-emerald-500/20 text-emerald-500 border-emerald-500/50'}`}>
+            {isRunning ? <FileText className="w-4 h-4 animate-pulse" /> : <CheckCircle2 className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className={`text-[11px] font-mono block ${isRunning ? 'text-[#0969da]' : 'text-emerald-500'}`}>
+              Drafting Brief
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Line 2 */}
+        <div className="hidden sm:block h-[2px] flex-1 bg-border/50 relative rounded-full overflow-hidden">
+          <div className={`absolute left-0 top-0 bottom-0 transition-all duration-1000 ${isRunning ? 'w-full animate-[shimmer_1.5s_infinite_0.2s] bg-gradient-to-r from-transparent via-[#0969da] to-transparent' : 'w-full bg-emerald-500'}`} />
+        </div>
+
+        {/* Step 3: SLA */}
+        <div className="flex flex-col items-center text-center gap-2 shrink-0 transition-opacity duration-300 opacity-100 w-24">
+          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${isRunning ? 'bg-amber-500/20 text-amber-500 border-amber-500/50 shadow-[0_0_10px_rgba(245,158,11,0.3)] animate-pulse' : 'bg-emerald-500/20 text-emerald-500 border-emerald-500/50'}`}>
+            {isRunning ? <Calendar className="w-4 h-4 animate-pulse" /> : <CheckCircle2 className="w-4 h-4" />}
+          </div>
+          <div>
+            <span className={`text-[11px] font-mono block ${isRunning ? 'text-amber-500' : 'text-emerald-500'}`}>
+              Determine SLA
+            </span>
+          </div>
+        </div>
+
       </div>
     </div>
   )
@@ -1093,8 +1222,8 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
           const slaDays = getSlaDaysRemaining(selectedIssue.sla_deadline)
 
           return (
-            <DialogContent className="bg-background border-border text-foreground w-[95vw] max-w-5xl sm:max-w-5xl overflow-y-auto max-h-[85vh] p-0 rounded-2xl shadow-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
-              <div className="p-8">
+            <DialogContent className="bg-background border-border text-foreground w-[95vw] max-w-7xl sm:max-w-7xl overflow-y-auto max-h-[90vh] p-0 rounded-2xl shadow-2xl [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+              <div className="p-8 sm:p-12">
                 {/* Screen Reader Announcement for live updates */}
                 <div aria-live="polite" aria-atomic="true" className="sr-only">
                   {`Issue status: ${selectedIssue.status}. Pipeline stage: ${selectedIssue.pipeline_stage ? selectedIssue.pipeline_stage.replace(/_/g, ' ') : 'Not started'}`}
@@ -1118,9 +1247,23 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                     </div>
                     {/* Title & Badges */}
                     <div className="flex flex-col gap-1.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-1">
                       <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground leading-none">
-                        {selectedIssue.title || 'Civic Issue'}
+                        {selectedIssue.title || 'Untitled Report'}
                       </DialogTitle>
+                      
+                      {(() => {
+                        const cat = CATEGORY_DETAILS[selectedIssue.category]
+                        if (!cat) return null
+                        const Icon = cat.icon
+                        return (
+                          <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-bold uppercase tracking-wider border ${cat.color} ${cat.bgColor} ${cat.borderColor} w-fit`}>
+                            <Icon className="w-3.5 h-3.5" />
+                            {cat.label}
+                          </div>
+                        )
+                      })()}
+                    </div>
                       <div className="flex flex-wrap items-center gap-2 mt-1">
                         <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full border shadow-sm ${status.bgClass} ${status.borderClass} ${status.textClass}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${status.dotClass}`} />
@@ -1149,10 +1292,10 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                 <div className="w-full h-px bg-border mb-8" />
 
                 {/* Single Column Layout */}
-                <div className="space-y-8">
+                <div className="space-y-12">
 
                   {/* Description */}
-                  <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-line font-medium">
+                  <p className="text-[15px] text-foreground/90 leading-relaxed whitespace-pre-line font-medium mt-4">
                     {selectedIssue.description}
                   </p>
 
@@ -1174,13 +1317,13 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                   )}
 
                   {/* Routing Details */}
-                  <div className="bg-card/50 border border-border rounded-xl p-5 space-y-4">
-                    <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none">
+                  <div className="bg-card/50 border border-border rounded-xl p-6 sm:p-8 space-y-6">
+                    <h4 className="text-xs font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none">
                       <Building className="w-4 h-4 text-muted-foreground" /> Administrative Routing Details
                     </h4>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-0.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+                      <div className="space-y-1">
                         <span className="text-[10px] text-muted-foreground font-semibold">Assigned Department</span>
                         <p className="text-xs font-bold text-foreground flex items-center gap-1.5 mt-1">
                           <Building className="w-4 h-4 text-indigo-400" />
@@ -1218,12 +1361,12 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                   </div>
 
                   {/* AI Processing Trace (Stepper / Timeline) */}
-                  <div className="space-y-5">
-                    <h4 className="text-[11px] font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none pl-1">
+                  <div className="space-y-6 pt-4">
+                    <h4 className="text-xs font-bold text-muted-foreground tracking-wider uppercase flex items-center gap-1.5 leading-none pl-1">
                       <Cpu className="w-4 h-4 text-muted-foreground" /> AI Agent Pipeline Processing Trace
                     </h4>
 
-                    <div className="relative pl-6 border-l-2 border-border/80 space-y-7 ml-2">
+                    <div className="relative pl-8 border-l-2 border-border/80 space-y-10 ml-2 mt-6">
 
                       {/* AGENT 0: TRANSLATOR */}
                       {(() => {
@@ -1244,15 +1387,15 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                               </p>
 
                               {state0 === 'done' && (
-                                <div className="bg-card/30 p-2.5 rounded-lg border border-border mt-3 text-[10px]">
-                                  <div className="flex flex-col gap-1.5">
+                                <div className="bg-[#0969da]/10 p-4 sm:p-5 rounded-xl border border-[#0969da]/30 mt-4">
+                                  <div className="flex flex-col gap-2.5">
                                     <div className="flex items-center gap-1.5">
-                                      <span className="text-muted-foreground font-semibold">Language Detected:</span>
-                                      <span className="font-bold text-[#0969da] capitalize">{selectedIssue.original_language || 'English'}</span>
+                                      <span className="text-muted-foreground font-bold text-xs uppercase tracking-wider">Language Detected:</span>
+                                      <span className="font-bold text-[#0969da] text-xs uppercase tracking-wider">{selectedIssue.original_language || 'English'}</span>
                                     </div>
                                     {selectedIssue.translation_trace && (
-                                      <div className="text-muted-foreground leading-relaxed italic">
-                                        <span className="font-semibold not-italic">Trace:</span> {selectedIssue.translation_trace}
+                                      <div className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
+                                        <span className="font-bold text-muted-foreground">Trace:</span> {selectedIssue.translation_trace}
                                       </div>
                                     )}
                                   </div>
@@ -1362,8 +1505,12 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                 Verified credibility index against historical data, user profile reliability, and weather datasets.
                               </p>
 
+                              {(state3 === 'done' || state3 === 'in_progress') && (
+                                <Agent3Visuals isRunning={state3 === 'in_progress'} issue={selectedIssue} />
+                              )}
+
                               {state3 === 'done' && (
-                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px]">
+                                <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-card/30 p-2.5 rounded-lg border border-border text-[10px] mt-2">
                                   <div>
                                     <span className="text-muted-foreground font-semibold">Credibility Index:</span>
                                     <span className={`ml-1 font-bold ${selectedIssue.credibility_score && selectedIssue.credibility_score >= 6 ? 'text-emerald-400' : 'text-amber-400'}`}>
@@ -1424,21 +1571,26 @@ export function DashboardClient({ user, profile, initialIssues, departments }: P
                                 Generated a concise civic action brief for department staff and computed completion SLA.
                               </p>
 
+                              {(state4 === 'done' || state4 === 'in_progress') && (
+                                <Agent4Visuals isRunning={state4 === 'in_progress'} />
+                              )}
+
                               {state4 === 'done' && (
-                                <>
+                                <div className="mt-2">
                                   {selectedIssue.civic_brief ? (
-                                    <div className="bg-background border border-border rounded-xl p-3.5 shadow-inner">
-                                      <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1 mb-1.5">
-                                        <FileText className="w-3 h-3" /> Generated Civic Brief (Officer view)
+                                    <div className="bg-card/50 border border-border rounded-xl p-5 shadow-inner mt-4 relative overflow-hidden">
+                                      <div className="absolute left-0 top-0 bottom-0 w-1 bg-emerald-500/50" />
+                                      <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5 mb-2.5">
+                                        <FileText className="w-4 h-4 text-emerald-500" /> Generated Civic Brief (Officer view)
                                       </span>
-                                      <p className="text-[11px] text-muted-foreground italic leading-relaxed">
+                                      <p className="text-[13px] sm:text-sm text-foreground/90 leading-relaxed font-medium">
                                         &ldquo;{selectedIssue.civic_brief}&rdquo;
                                       </p>
                                     </div>
                                   ) : (
-                                    <p className="text-[10px] text-muted-foreground italic">SLA generated, awaiting brief indexing.</p>
-                                  )}
-                                </>
+                                      <p className="text-[10px] text-muted-foreground italic">SLA generated, awaiting brief indexing.</p>
+                                    )}
+                                </div>
                               )}
                             </div>
                           </div>

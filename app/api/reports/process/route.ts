@@ -69,7 +69,8 @@ export async function POST(req: NextRequest) {
 
     // Run asynchronously in the background using Next.js after()
     after(() => {
-      pipeline.invoke(initialState as any).catch(async (err) => {
+      const config = { configurable: { thread_id: issue.id } };
+      pipeline.invoke(initialState as any, config).catch(async (err) => {
         console.error('Pipeline Background Error:', err)
         await supabase.from('issues').update({ pipeline_stage: 'failed' }).eq('id', issue.id)
       })

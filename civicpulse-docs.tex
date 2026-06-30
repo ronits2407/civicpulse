@@ -19,6 +19,7 @@
 \usepackage{enumitem}
 \usepackage{fancyhdr}
 \usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
 \usepackage{tcolorbox}
 \usepackage{mdframed}
 \usepackage{listings}
@@ -746,6 +747,9 @@ The CI/CD pipeline authenticates to GCP with \textbf{zero stored credentials} �
 \subsection{Google OAuth}
 Supabase Auth is configured with the Google OAuth provider (\tech{NEXT\_PUBLIC\_GOOGLE\_CLIENT\_ID}). The callback at \file{app/auth/callback/route.ts} exchanges the code for a session and reads a \tech{role} query parameter to route admins to \file{/admin/dashboard}.
 
+\subsection{Google Antigravity \& MCP Tooling}
+During development, the platform was built and accelerated using Google's advanced AI coding ecosystem, specifically the \textbf{Antigravity IDE} and \textbf{Antigravity Agents} (including Agent Ali). To enable autonomous browser testing and context-aware development, the \textbf{Google Stitch MCP Server} and the \textbf{Chrome DevTools MCP Server} were heavily leveraged, allowing the AI to seamlessly interact with local development servers and debug web interfaces in real time.
+
 \clearpage
 
 % ============================================================
@@ -923,6 +927,28 @@ CivicPulse is built with a \textbf{mobile-first approach} — every screen is de
   \item \textbf{PWA-ready:} A service worker stub (\file{public/sw.js}) and web manifest are in place for future offline support and home-screen installation.
 \end{itemize}
 
+\subsection{Loading Animations \& Pipeline Visibility}
+To ensure citizens do not feel abandoned while the complex six-agent pipeline runs in the background, CivicPulse implements dynamic loading states. While images are being processed by Gemini Vision (Agent 1) and while the vector database checks for duplicates (Agent 2), users are presented with smooth, reassuring loading animations. 
+
+This transparent pipeline visibility actively communicates that ``work is being done,'' building trust and patience. The interface visually transitions through each stage—Classification, Deduplication, and Validation—providing real-time feedback as the AI completes its reasoning steps.
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{s6_issue_detail_2.jpg}
+    \end{minipage}\hfill
+    \begin{minipage}{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{s6_issue_detail_3.jpg}
+    \end{minipage}\hfill
+    \begin{minipage}{0.32\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{s6_issue_detail_4.jpg}
+    \end{minipage}
+    \caption{Dynamic pipeline UI showing progress through Deduplication, Validation, and Resolution.}
+\end{figure}
+
 
 % ============================================================
 \section{User Perspective — Accessibility and Inclusivity}
@@ -962,6 +988,13 @@ Keyboard navigation (Radix)     & Full keyboard + screen reader support \\
 \bottomrule
 \end{tabular}
 
+\subsection{Web Accessibility (a11y) \& Screen Reader Support}
+CivicPulse heavily leverages HTML ARIA attributes and semantic structure to ensure the platform is fully usable for visually impaired citizens and those relying on keyboard navigation:
+\begin{itemize}
+  \item \textbf{Screen Reader Labels:} All icon-only interactive elements (like the ``Use GPS location'' and ``Choose location on map'' buttons) are explicitly tagged with \tech{aria-label}, ensuring screen readers articulate the exact action rather than skipping the icon.
+  \item \textbf{Tab Navigation \& Roles:} Complex UI components like dashboard status/category filters use strict WAI-ARIA patterns including \tech{role="tablist"}, \tech{role="group"}, \tech{aria-selected}, and \tech{aria-pressed}. This allows users to tab through filters and intuitively understand the active state entirely via keyboard navigation.
+  \item \textbf{Dynamic Announcements:} For asynchronous background tasks (like the AI pipeline processing), visually hidden \tech{sr-only} containers with \tech{aria-live="polite"} and \tech{aria-atomic="true"} are used. This allows the UI to silently announce status changes (e.g., ``Issue deduplication complete'') to screen readers without jarring visual interruptions.
+\end{itemize}
 \clearpage
 
 % ============================================================
@@ -987,6 +1020,14 @@ Single point of contact for all AI operations with four exported functions:
 \end{tabular}
 
 \textbf{Key implementation details:} Singleton pattern for client instances; custom \tech{fetch} with \tech{keepalive: false} to prevent \tech{UND\_ERR\_SOCKET} behind tunnels; JSON parsing strips markdown fences before \tech{JSON.parse()}.
+
+\subsection{Agentic Retry Logic \& Self-Correction}
+To ensure the pipeline is highly resilient to LLM hallucinations and malformed outputs, the architecture implements a multi-tiered agentic retry mechanism:
+\begin{itemize}
+  \item \textbf{Syntax Level (Self-Correction):} If an agent outputs invalid JSON or hallucinates extra text, the \tech{generateStructuredJSON} function catches the \tech{SyntaxError}, feeds the exact error message back into a new prompt, and asks the LLM to self-correct its output (up to 3 attempts).
+  \item \textbf{API Level (Exponential Backoff):} Temporary API rate limits or network timeouts are handled via exponential backoff retries within the AI client.
+  \item \textbf{State Level (LangGraph Resume):} If all in-node agentic retries fail, the LangGraph pipeline safely halts and persists the state as \tech{*\_failed} in the database. When triggered via the \file{/api/reports/retry} endpoint, the pipeline reconstructs the full \tech{AgentState} and resumes precisely from the failed agent, ensuring that expensive previous steps (like image analysis or embeddings) are never re-run unnecessarily.
+\end{itemize}
 
 \subsection{Three Supabase Clients}
 

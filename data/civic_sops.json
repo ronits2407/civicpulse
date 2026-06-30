@@ -1,0 +1,30 @@
+[
+  {
+    "category": "infrastructure",
+    "content": "Potholes deeper than 5cm or wider than 30cm on major arterial roads must be filled using rapid-setting cold mix asphalt within 24 hours (High severity). Minor potholes on residential streets can use standard hot mix and must be resolved within 72 hours (Medium severity). Any structural damage to bridges or flyovers requires immediate barricading and engineering inspection within 6 hours."
+  },
+  {
+    "category": "infrastructure",
+    "content": "Broken or missing manhole covers pose a severe life threat. They must be replaced or securely barricaded within 12 hours of reporting, regardless of the road type. Temporary heavy-duty covers can be used if standard cast iron covers are unavailable."
+  },
+  {
+    "category": "sanitation",
+    "content": "Clogged storm water drains causing active flooding during monsoons must be cleared using super-sucker machines within 12 hours. Routine drain desilting requests in dry weather have a 48-hour SLA. Open garbage dumping creating a health hazard near schools or hospitals must be cleared manually within 24 hours."
+  },
+  {
+    "category": "sanitation",
+    "content": "Dead animal carcasses on public roads must be removed by the municipal health department's specialized bio-waste vehicle within 6 hours to prevent disease spread. Routine street sweeping missed requests will be resolved by assigning a backup sanitary worker within 48 hours."
+  },
+  {
+    "category": "safety",
+    "content": "Non-functioning streetlights on major roads or intersections must be repaired within 24 hours. Entire street block outages suggest transformer or line faults and must be escalated to the electricity board with a 12-hour resolution target. Damaged electrical poles with exposed live wires require immediate power shutdown and repair within 6 hours."
+  },
+  {
+    "category": "utility",
+    "content": "Active pipe bursts causing significant water leakage on main supply lines require immediate valve closure and repair within 12 hours. Minor leaks in household connection lines have a 48-hour SLA. Contaminated drinking water supply (e.g., sewage mixing) is a severe hazard; supply must be halted immediately and alternate tanker supply provided within 6 hours."
+  },
+  {
+    "category": "environment",
+    "content": "Illegal tree cutting of heritage or protected species must be inspected by the municipal botanist within 48 hours, and an FIR must be lodged. Smoke nuisance from illegal garbage or chemical burning requires inspection by the pollution control squad within 24 hours."
+  }
+]

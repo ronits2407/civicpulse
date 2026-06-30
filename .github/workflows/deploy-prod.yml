@@ -43,6 +43,7 @@ jobs:
 
       - name: Build Docker Image
         run: |
+          sed -i 's/\r$//' .env.production
           source .env.production
           docker build \
             --build-arg NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
